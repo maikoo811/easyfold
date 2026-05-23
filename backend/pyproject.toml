@@ -29,6 +29,7 @@ select = ["E", "F", "I", "B", "UP", "N", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "easyfold/external/exceptions.py" = ["N818"]
+"easyfold/af3_input/exceptions.py" = ["N818"]
 
 [tool.mypy]
 python_version = "3.11"
