@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# vendored Mol* bundle (copied from node_modules by postinstall)
+/public/molstar/
+
 # production
 /build
 
