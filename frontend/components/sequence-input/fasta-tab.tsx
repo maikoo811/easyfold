@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ interface FastaTabProps {
 }
 
 export function FastaTab({ isLoading, onSubmit }: FastaTabProps) {
+  const textareaId = useId();
   const [value, setValue] = useState("");
 
   const handleSubmit = () => {
@@ -21,11 +22,15 @@ export function FastaTab({ isLoading, onSubmit }: FastaTabProps) {
   };
 
   return (
-    <div className="space-y-3">
-      <label className="text-sm font-medium text-muted-foreground">
+    <div className="space-y-3 rounded-lg border bg-card p-4">
+      <label
+        htmlFor={textareaId}
+        className="text-sm font-medium text-foreground"
+      >
         Paste a FASTA sequence or raw amino acid letters
       </label>
       <Textarea
+        id={textareaId}
         placeholder={PLACEHOLDER}
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -34,7 +39,7 @@ export function FastaTab({ isLoading, onSubmit }: FastaTabProps) {
         className="font-mono text-xs"
       />
       <Button onClick={handleSubmit} disabled={isLoading || !value.trim()}>
-        Parse sequence
+        Use sequence
       </Button>
     </div>
   );

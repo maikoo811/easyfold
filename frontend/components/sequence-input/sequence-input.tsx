@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { validatePdb, validateUniprot } from "@/lib/identifiers";
 
 import { FastaTab } from "./fasta-tab";
 import { IdLookupTab } from "./id-lookup-tab";
@@ -22,18 +23,24 @@ export function SequenceInput() {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="uniprot">
-        <TabsList>
-          <TabsTrigger value="uniprot">Look up UniProt</TabsTrigger>
-          <TabsTrigger value="rcsb">Look up PDB</TabsTrigger>
-          <TabsTrigger value="fasta">Paste Sequence</TabsTrigger>
+      <Tabs defaultValue="fasta">
+        <TabsList className="w-full">
+          <TabsTrigger value="fasta">Paste sequence</TabsTrigger>
+          <TabsTrigger value="uniprot">UniProt</TabsTrigger>
+          <TabsTrigger value="rcsb">PDB</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="fasta" className="pt-4">
+          <FastaTab isLoading={isLoading} onSubmit={submitFasta} />
+        </TabsContent>
 
         <TabsContent value="uniprot" className="pt-4">
           <IdLookupTab
-            label="Enter a UniProt accession"
-            placeholder="e.g. P04637"
+            label="UniProt accession"
+            placeholder="P04637"
             exampleId="P04637"
+            submitLabel="Fetch"
+            validate={validateUniprot}
             isLoading={isLoading}
             onSubmit={lookupUniprot}
           />
@@ -41,16 +48,14 @@ export function SequenceInput() {
 
         <TabsContent value="rcsb" className="pt-4">
           <IdLookupTab
-            label="Enter a PDB ID"
-            placeholder="e.g. 1TUP"
+            label="PDB ID"
+            placeholder="1TUP"
             exampleId="1TUP"
+            submitLabel="Fetch"
+            validate={validatePdb}
             isLoading={isLoading}
             onSubmit={lookupRcsb}
           />
-        </TabsContent>
-
-        <TabsContent value="fasta" className="pt-4">
-          <FastaTab isLoading={isLoading} onSubmit={submitFasta} />
         </TabsContent>
       </Tabs>
 
