@@ -63,6 +63,36 @@ easyfold/
 7. **Write tests for backend logic.** Frontend tests only for non-trivial components (don't test trivial render).
 8. **When stuck or unsure about scope, ask.** Don't guess and ship.
 
+## Autonomous task workflow
+
+The roadmap in `docs/ROADMAP.md` drives session progression. Per-task long-form docs live in `docs/tasks/TASK-<id>.md`, created from `docs/TASK_TEMPLATE.md`.
+
+**At session start:**
+
+1. Read `docs/ROADMAP.md`.
+2. The **next task** is the first one with status `Not started` whose dependencies are all `Done`. The roadmap also marks it with `← **NEXT**` for grep-ability.
+3. If the user says `continue` (or only greets without naming a task), proceed with that task. If the user says `do task X.Y`, switch to that one — it does not need to be the inferred next.
+
+**Before coding a task:**
+
+1. Copy `docs/TASK_TEMPLATE.md` to `docs/tasks/TASK-<id>.md`.
+2. Fill in **Context, Goal, Requirements, Out of scope, Acceptance criteria, Approach**.
+3. Enter plan mode and propose the implementation. Wait for the user's approval — *every time*, even when the user has previously said "no questions". A new task is a new approval boundary.
+4. Create the feature branch (`<type>/<short-desc>`) before any code edits — per the PR-workflow rule (#5).
+5. Update `docs/ROADMAP.md`: status → `In progress`, fill the **Branch** field.
+
+**During the task:**
+
+Append meaningful decisions, surprises, and scope changes to the task doc's **Implementation notes** as they happen. The doc is the long-form record; commit messages stay short.
+
+**After the task:**
+
+1. Verify *every* acceptance criterion. Run the **full** test suite, not just new tests (see learning log: 2026-05-23).
+2. Commit, push, `gh pr create`, wait for CI green, `gh pr merge --rebase --delete-branch`, pull main.
+3. Update `docs/ROADMAP.md`: status → `Done`, fill **Completed**, move the `← **NEXT**` marker to the new next task.
+4. Write **Learnings** in the task doc. If a learning is *generalizable* (would apply to future tasks regardless of subject), copy it to **Learning log** below with the date.
+5. Do **not** start the next task automatically — wait for the user's next message. The user says `continue` to proceed, `do task X.Y` to jump, or describes the next thing directly.
+
 ## Things that are out of scope for MVP
 
 Do not implement these unless explicitly asked:
@@ -91,12 +121,13 @@ When designing UI, always check:
 ## What to do at the start of every session
 
 1. Read this file (you are, good).
-2. Check `docs/PROJECT_BRIEF.md` if the task touches architecture or product.
-3. Look at recent commits with `git log --oneline -20` to understand where we left off.
-4. If the task is ambiguous or scope > 3 steps, propose a plan first.
+2. Read `docs/ROADMAP.md` to identify the next task — see **Autonomous task workflow** above.
+3. Check `docs/PROJECT_BRIEF.md` if the task touches architecture or product.
+4. Look at recent commits with `git log --oneline -20` to understand where we left off.
+5. If the task is ambiguous or scope > 3 steps, propose a plan first.
 
 ## Learning log
 
 (Add rules here as we discover them through real work. Keep entries dated and short.)
 
-- _(none yet — will be filled as the project progresses)_
+- 2026-05-23: Task 1.3.5 introduced a regression in UniProt validation (Task 1.3.6 fixed it). Always run all existing tests after design/refactor tasks, not just new ones. Add tests for any logic touched by a refactor.
