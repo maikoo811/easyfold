@@ -131,3 +131,6 @@ When designing UI, always check:
 (Add rules here as we discover them through real work. Keep entries dated and short.)
 
 - 2026-05-23: Task 1.3.5 introduced a regression in UniProt validation (Task 1.3.6 fixed it). Always run all existing tests after design/refactor tasks, not just new ones. Add tests for any logic touched by a refactor.
+- 2026-05-23: Next.js 16 App Router rejects `dynamic(..., { ssr: false })` from Server Components. If a component is already `'use client'` and doesn't import server-incompatible code at module load, import it directly from the Server Component; reserve `ssr: false` for client wrappers around code that truly cannot be evaluated server-side. (From Task 2.1.)
+- 2026-05-23: ESLint defaults don't ignore `/public/`. When adding vendored bundles or generated assets there, also add the path to `eslint.config.mjs` global ignores — otherwise the lint job scans them and explodes. (From Task 2.1.)
+- 2026-05-23: When a 3rd-party library ships `.html`/`.scss`/Node-only files that Turbopack/webpack can't bundle, vendor the library's prebuilt UMD into `/public/` via a `postinstall` script and load it via `<script>` tag at runtime. Loses tree-shaking, gains a clean build. (From Task 2.1, Mol*.)

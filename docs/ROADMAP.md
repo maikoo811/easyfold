@@ -51,13 +51,13 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
 
 ## Week 3-4 — Result viewer and demo
 
-- [ ] **2.1 Mol\* Viewer integration** ← **NEXT**
-  - Status: Not started · Branch: —
-  - Upload mmCIF/PDB; render the 3D structure in the result page using Mol\* Viewer.
+- [x] **2.1 Mol\* Viewer integration** · Branch: `feat/molstar-viewer`
+  - Status: Done · Completed: 2026-05-23
+  - Standalone `/demo/viewer` route loads a static 1TUP fixture via Mol*'s prebuilt UMD (vendored into `/public/molstar/` by a `postinstall` script — Turbopack can't bundle Mol* directly). `StructureViewer` is a `'use client'` component with proper unmount cleanup and an error state.
   - Depends: 1.1
-  - Acceptance: viewer loads a 1TUP fixture and rotates without console errors; component degrades gracefully when the file is missing or malformed.
+  - Acceptance: viewer renders 1TUP and rotates; no console errors; error path renders the destructive-styled fallback.
 
-- [ ] **2.2 pLDDT / PAE chart visualization (Recharts)**
+- [ ] **2.2 pLDDT / PAE chart visualization (Recharts)** ← **NEXT**
   - Status: Not started · Branch: —
   - Render per-residue pLDDT line chart and PAE heatmap from AF3 output. Co-located with the Mol\* viewer on the result page.
   - Depends: 2.1
