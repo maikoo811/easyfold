@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Check, Copy, RotateCcw } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -46,23 +46,25 @@ export function SequenceResultCard({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <CardTitle className="font-mono">{data.id}</CardTitle>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            {SOURCE_LABELS[data.source]}
-          </span>
+          <Badge variant="outline">{SOURCE_LABELS[data.source]}</Badge>
+          <Badge variant="secondary">{data.length} amino acids</Badge>
         </div>
-        {data.description && (
-          <CardDescription>{data.description}</CardDescription>
+        {(data.organism || data.description) && (
+          <div className="mt-3 space-y-1 border-t border-border/60 pt-3 text-sm">
+            {data.organism && (
+              <p className="italic text-muted-foreground">{data.organism}</p>
+            )}
+            {data.description && (
+              <p className="text-foreground">{data.description}</p>
+            )}
+          </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex gap-4 text-sm text-muted-foreground">
-          {data.organism && <span>{data.organism}</span>}
-          <span>{data.length} residues</span>
-        </div>
+      <CardContent>
         <div className="relative">
-          <pre className="max-h-48 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
+          <pre className="max-h-64 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
             {formatSequence(data.sequence)}
           </pre>
           <Button
@@ -70,6 +72,7 @@ export function SequenceResultCard({
             size="icon-xs"
             className="absolute right-2 top-2"
             onClick={handleCopy}
+            aria-label={copied ? "Copied" : "Copy sequence"}
           >
             {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
           </Button>

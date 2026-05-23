@@ -42,7 +42,7 @@ export function validateSequence(sequence: string): string | null {
   if (!sequence) return "Sequence is empty";
   if (!AMINO_ACIDS.test(sequence)) {
     const invalid = sequence.match(/[^ACDEFGHIKLMNPQRSTVWY]/i);
-    return `Invalid character "${invalid?.[0]}" found. Only standard amino acid letters are allowed.`;
+    return `"${invalid?.[0]}" isn't a standard amino acid letter. Use only ACDEFGHIKLMNPQRSTVWY (one-letter codes).`;
   }
   return null;
 }
