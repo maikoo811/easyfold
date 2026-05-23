@@ -41,6 +41,14 @@ A running log of technical decisions. New decisions append a section below; deep
 - **RCSB sequence selection**: longest *protein* chain (DNA/RNA polymer entities are filtered). FASTA + entry endpoints are always called; the entity endpoint is called only when the FASTA header omits organism.
 - **Tests**: `respx` mocks for offline unit tests (run in CI); `@pytest.mark.live` for opt-in real-network tests (`uv run pytest --live`). Marker registered in `tests/conftest.py`.
 
+## AF3 input mapping (Task 1.4)
+
+- Internal `PredictionJob` model lives in `backend/easyfold/af3_input/`. Callers describe a job in EasyFold's snake_case vocabulary (`proteins`, `ligands`, `modifications`); `build_af3_input(job)` produces the AF3-shaped JSON.
+- Chain IDs are assigned in **Excel column order** (`A, B, …, Z, AA, AB, …`). A `copies > 1` field on `ProteinSpec` / `LigandSpec` emits `"id": ["A", "B"]` as a list — AF3's native homo-multimer signal.
+- `validate_af3_input(data)` is a hand-rolled structural validator (no `jsonschema` dep — AF3 publishes no schema). Builder runs it on its own output as defense in depth; callers can also use it on hand-authored JSON.
+- AF3 version pin: `dialect = "alphafold3"`, `version = 4`. Validator accepts versions `{1, 2, 3, 4}`. Bumping AF3 means changing the constant + adding to the allow-set.
+- See [ADR 0001](decisions/0001-af3-input-mapping.md) for the full rationale.
+
 ## Hosting
 
 - **Demo: Hugging Face Spaces** (CPU free tier). Pre-computed examples only; no live prediction.
