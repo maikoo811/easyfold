@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from easyfold.main import app
 
 client = TestClient(app)
 

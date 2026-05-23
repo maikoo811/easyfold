@@ -32,6 +32,15 @@ A running log of technical decisions. New decisions append a section below; deep
 - **RCSB PDB API** for reference structures.
 - Both are public, rate-limited; cache locally as needed.
 
+### Client implementation (Task 1.2)
+
+- Async clients live in `backend/easyfold/external/`. One free function per source — `fetch_uniprot()`, `fetch_rcsb()` — returning a common `FetchedSequence` Pydantic model (`id, source, sequence, organism, length, description`).
+- **Errors** normalize to four exceptions: `SequenceNotFound` (400/404), `ExternalSourceUnavailable` (network / persistent 5xx), `MalformedExternalResponse` (2xx body we couldn't parse), all subclasses of `ExternalSourceError`.
+- **Rate limiting** via `aiolimiter.AsyncLimiter(10, 1)` — one shared per host, process-wide. RCSB's 10 req/s is the binding constraint; UniProt has no documented limit but we keep the same budget for politeness.
+- **Retry**: one retry on 5xx with exponential backoff (0.5s, 1s) inline in `_http.py`; no `tenacity` dep.
+- **RCSB sequence selection**: longest *protein* chain (DNA/RNA polymer entities are filtered). FASTA + entry endpoints are always called; the entity endpoint is called only when the FASTA header omits organism.
+- **Tests**: `respx` mocks for offline unit tests (run in CI); `@pytest.mark.live` for opt-in real-network tests (`uv run pytest --live`). Marker registered in `tests/conftest.py`.
+
 ## Hosting
 
 - **Demo: Hugging Face Spaces** (CPU free tier). Pre-computed examples only; no live prediction.
