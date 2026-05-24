@@ -63,13 +63,13 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 2.1
   - Acceptance: charts render; pLDDT tooltip shows `Residue N · pLDDT V`; PAE hover shows `(i, j) · X Å`; fixture spot-checks pass.
 
-- [ ] **2.3 LLM interpretation layer (Claude API)** ← **NEXT** — DIFFERENTIATION CORE
-  - Status: Not started · Branch: —
-  - Take pLDDT/PAE/ipTM stats + the user's stated question and produce a natural-language interpretation with suggested next actions. BYOK; no server-side key storage.
+- [x] **2.3 LLM interpretation layer (Claude API)** · Branch: `feat/llm-interpretation` — DIFFERENTIATION CORE
+  - Status: Done · Completed: 2026-05-23
+  - "Interpret" panel on `/demo/viewer`: BYOK key + question textarea → raw `POST /v1/messages` from the browser → paragraph + 1–3 actions parsed from a delimited text protocol. The `@anthropic-ai/sdk` package doesn't bundle in Turbopack (Node-only beta paths) so we use `fetch` + `anthropic-dangerous-direct-browser-access` header instead — 0 KB bundle delta. `ConfidenceCharts` refactored into a pure view; new `ResultViewer` does the single fetch and renders both children.
   - Depends: 2.2
-  - Acceptance: given a fixture metrics blob + a question, returns a sensible paragraph + 1-3 action suggestions; key never leaves the user's browser without explicit submission.
+  - Acceptance: typecheck/lint/build green, panel renders, real Anthropic call succeeds with a user-supplied key, errors normalized to `InterpretError` and rendered inline.
 
-- [ ] **2.4 Hugging Face Spaces demo build**
+- [ ] **2.4 Hugging Face Spaces demo build** ← **NEXT**
   - Status: Not started · Branch: —
   - CPU-only demo on HF Spaces showcasing 3 pre-computed structures (no GPU, no AF3 runtime). End-to-end UX: input → viewer → charts → interpretation.
   - Depends: 2.1, 2.2, 2.3
