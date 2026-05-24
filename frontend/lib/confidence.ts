@@ -5,6 +5,8 @@ export interface ConfidenceData {
   plddt: number[];
   /** Predicted aligned error matrix in Å. `pae.length === length`, each row also `length`. */
   pae: number[][];
+  /** Interface pTM (0–1). Only meaningful for multi-chain predictions; may be absent for single-chain. */
+  iptm?: number;
 }
 
 export type PlddtBand = "very-high" | "high" | "low" | "very-low";

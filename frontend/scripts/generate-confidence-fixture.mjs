@@ -64,11 +64,17 @@ function buildPae(rng) {
 }
 
 const rng = makeRng(SEED);
+// ipTM is the inter-chain interface confidence — really only meaningful for
+// multi-chain complexes. 1TUP is a single protein chain in this fixture, so
+// the value below is synthetic; included so the metric path can be exercised
+// end-to-end (e.g. the LLM interpretation prompt). Real ipTM will land in 3.x.
+const SYNTHETIC_IPTM = 0.84;
 const data = {
   name: "1TUP (synthetic confidence)",
   length: N,
   plddt: buildPlddt(rng),
   pae: buildPae(rng),
+  iptm: SYNTHETIC_IPTM,
 };
 
 await writeFile(OUT, JSON.stringify(data));
