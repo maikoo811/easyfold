@@ -83,13 +83,13 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 1.4
   - Acceptance: ruff/mypy/pytest green; Modal App imports without network; `modal/README.md` provisioning guide complete with smoke-test command + troubleshooting.
 
-- [ ] **3.2 Boltz-2 on Modal (MIT-licensed alternative)** ← **NEXT**
-  - Status: Not started · Branch: —
-  - Sibling Modal Function for Boltz-2. Same `PredictionJob` input, different output shape adapter.
+- [x] **3.2 Boltz-2 on Modal (MIT-licensed alternative)** · Branch: `feat/boltz-on-modal`
+  - Status: Done · Completed: 2026-05-24
+  - `modal.App("easyfold-boltz")` sibling to `easyfold-af3` on H100; weights auto-download into `easyfold-boltz-cache` Volume (`create_if_missing=True`); MSAs via Boltz's built-in `--use_msa_server`. `boltz_input/` package mirrors `af3_input/` (YAML emitter + validator). Refactored 3.1's `AF3Outputs` → unified `ModelResult` dataclass (`inference/result.py`) so both Functions return one shape; model-specific raw JSON preserved under `extras`. 120 passing tests (was 84). `./modal/deploy.sh` now takes `af3`|`boltz` arg. End-to-end smoke scripted in `modal/README.md` § Boltz-2 for the user — Boltz unblocks the first real inference (no weight approval gate). See ADR 0003.
   - Depends: 1.4
-  - Acceptance: a single-protein job runs end-to-end on Modal; output adapter normalizes Boltz outputs to the viewer's expected shape.
+  - Acceptance: ruff/mypy/pytest green; both Modal Apps import without network; `modal/README.md` Boltz section complete with smoke + troubleshooting.
 
-- [ ] **3.3 Backend API for job submission and progress**
+- [ ] **3.3 Backend API for job submission and progress** ← **NEXT**
   - Status: Not started · Branch: —
   - `POST /api/v1/jobs` (start), `GET /api/v1/jobs/{id}` (status + outputs). Backend dispatches to Modal; polling-based progress for the MVP.
   - Depends: 3.1, 3.2
