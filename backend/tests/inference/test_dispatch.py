@@ -135,9 +135,7 @@ def test_poll_translates_message_based_not_found_from_from_id(
     with "No Function Call with ID ..." for unknown ids. Translate by message."""
 
     def boom(_id: str) -> Any:
-        raise modal.exception.ExecutionError(
-            "No Function Call with ID 'fc-doesnotexist' found."
-        )
+        raise modal.exception.ExecutionError("No Function Call with ID 'fc-doesnotexist' found.")
 
     monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", boom)
 
