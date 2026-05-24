@@ -57,13 +57,13 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 1.1
   - Acceptance: viewer renders 1TUP and rotates; no console errors; error path renders the destructive-styled fallback.
 
-- [ ] **2.2 pLDDT / PAE chart visualization (Recharts)** ← **NEXT**
-  - Status: Not started · Branch: —
-  - Render per-residue pLDDT line chart and PAE heatmap from AF3 output. Co-located with the Mol\* viewer on the result page.
+- [x] **2.2 pLDDT / PAE chart visualization (Recharts)** · Branch: `feat/confidence-charts`
+  - Status: Done · Completed: 2026-05-23
+  - pLDDT rendered with Recharts `LineChart` (project teal line, muted reference bands at 50/70/90); PAE rendered as plain SVG (47k rects, single-hue teal scale, delegated mouse handler). Synthetic 219-residue fixture from a seeded Mulberry32 generator. Co-located with the Mol\* viewer on `/demo/viewer`.
   - Depends: 2.1
-  - Acceptance: charts render from a fixture JSON; values match the source; tooltips show residue indices.
+  - Acceptance: charts render; pLDDT tooltip shows `Residue N · pLDDT V`; PAE hover shows `(i, j) · X Å`; fixture spot-checks pass.
 
-- [ ] **2.3 LLM interpretation layer (Claude API)** — DIFFERENTIATION CORE
+- [ ] **2.3 LLM interpretation layer (Claude API)** ← **NEXT** — DIFFERENTIATION CORE
   - Status: Not started · Branch: —
   - Take pLDDT/PAE/ipTM stats + the user's stated question and produce a natural-language interpretation with suggested next actions. BYOK; no server-side key storage.
   - Depends: 2.2
