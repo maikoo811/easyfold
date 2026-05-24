@@ -73,8 +73,10 @@ def run_af3(input_json: dict[str, Any], *, with_colabfold_msa: bool = True) -> d
             ``pairedMsa`` for every protein chain.
 
     Returns:
-        Dict with the AF3Outputs shape (see ``output_parse.AF3Outputs.to_dict``):
-        ``{cif, confidences, summary_confidences, sample_dir_name}``.
+        Dict produced by :meth:`easyfold.inference.result.ModelResult.to_dict` —
+        the unified shape both AF3 and Boltz Functions return. AF3-specific raw
+        confidence JSONs (``confidences``, ``summary_confidences``) live under
+        ``["extras"]`` for callers that need them.
     """
     if with_colabfold_msa:
         msas: dict[str, str] = {}

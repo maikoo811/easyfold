@@ -1,10 +1,21 @@
-# `/modal` — AlphaFold 3 on Modal
+# `/modal` — EasyFold inference Functions
 
-This directory holds the deployment metadata + runner script for EasyFold's AlphaFold 3 inference Function. The Python code that defines the Function lives in [`backend/easyfold/inference/`](../backend/easyfold/inference/) (see [ADR 0002](../docs/decisions/0002-af3-on-modal.md) for why).
+This directory holds the deployment metadata + runner script for EasyFold's two inference Functions: **AlphaFold 3** (`easyfold-af3`) and **Boltz-2** (`easyfold-boltz`). The Python code that defines them lives in [`backend/easyfold/inference/`](../backend/easyfold/inference/) — see [ADR 0002](../docs/decisions/0002-af3-on-modal.md) (AF3 + code-layout rationale) and [ADR 0003](../docs/decisions/0003-boltz-on-modal-and-model-result.md) (Boltz + unified `ModelResult`).
 
-EasyFold is **zero-hosting OSS**: you deploy the Function to your own [Modal](https://modal.com) account, with your own Google-approved AlphaFold 3 weights, and you pay Modal directly for GPU time. We never run inference, never see your data, never pay your bill.
+EasyFold is **zero-hosting OSS**: you deploy these Functions to your own [Modal](https://modal.com) account and you pay Modal directly for GPU time. We never run inference, never see your data, never pay your bill.
+
+**Pick your model:**
+
+| Model | License | Weights | Best for |
+|---|---|---|---|
+| AlphaFold 3 | CC-BY-NC-SA 4.0 (non-commercial) | Request via Google (2–3 business days) | Academic use, highest-quality reference predictions |
+| Boltz-2 | MIT (commercial OK) | Auto-downloaded on first run | Commercial use, fast start, no approval wait |
+
+You can deploy one or both. They're independent Modal Apps.
 
 ---
+
+# AlphaFold 3
 
 ## Prerequisites
 
@@ -66,10 +77,12 @@ uv run modal volume ls easyfold-af3-weights
 From the repo root:
 
 ```bash
-./modal/deploy.sh
+./modal/deploy.sh          # default: AF3
+# or explicitly:
+./modal/deploy.sh af3
 ```
 
-That script just runs `uv run modal deploy easyfold/inference/af3.py` from the `backend/` directory. First deploy builds the Docker image (CUDA + JAX + AF3 source) — expect **5–10 minutes**. Subsequent deploys reuse the layer cache and take ~30 seconds.
+That script runs `uv run modal deploy easyfold/inference/af3.py` from the `backend/` directory. First deploy builds the Docker image (CUDA + JAX + AF3 source) — expect **5–10 minutes**. Subsequent deploys reuse the layer cache and take ~30 seconds.
 
 You should see something like:
 
@@ -140,4 +153,106 @@ Modal bills per-second of GPU time. The Function only burns GPU during inference
 - Run AF3's full data pipeline (no Mgnify/BFD/Uniref DBs are mounted — see ADR 0002).
 - Cache MSAs (ColabFold caches server-side; per-request lookup is fast for cache hits).
 - Persist outputs across runs (the function returns the result; Task 3.3 will add an output Volume for the job-tracking API).
-- Run Boltz-2 (that's [Task 3.2](../docs/ROADMAP.md), a sibling Function in this directory).
+- Run Boltz-2 (that's the sibling Function described below in this README).
+
+---
+
+# Boltz-2
+
+## Prerequisites
+
+1. **Modal account** — same as AF3. No weight request needed; Boltz-2 is MIT-licensed and the weights download automatically on first run.
+2. **Local tooling** — `uv` (for the `modal` CLI), `git`.
+
+## One-time setup
+
+### 1. Authenticate the Modal CLI
+
+Same as AF3 (skip if you've already done it):
+
+```bash
+cd backend
+uv sync
+uv run modal setup
+```
+
+### 2. (Optional) Create the cache Volume
+
+```bash
+uv run modal volume create easyfold-boltz-cache
+```
+
+This is **optional**: `inference/boltz.py` uses `create_if_missing=True`, so the first deploy self-creates the Volume. Creating it ahead of time just lets you `modal volume ls` to verify before the first run.
+
+The Volume mounts at `/root/.boltz` inside the container — Boltz's default cache path. The first inference downloads ~2 GB of weights into the Volume; subsequent runs reuse them.
+
+### 3. Deploy the Function
+
+```bash
+./modal/deploy.sh boltz
+```
+
+That runs `uv run modal deploy easyfold/inference/boltz.py` from the `backend/` directory. First deploy builds the Docker image (PyTorch + CUDA + boltz) — expect **5–10 minutes**. Subsequent deploys reuse the layer cache.
+
+You should see something like:
+
+```
+✓ Created objects.
+├── 🔨 Created mount …
+├── 🔨 Created image …
+└── 🔨 Created function run_boltz.
+✓ App deployed in 7.81s! 🎉
+
+View Deployment: https://modal.com/apps/<your-workspace>/main/deployed/easyfold-boltz
+```
+
+### 4. Smoke test
+
+```bash
+cd backend
+uv run modal run easyfold/inference/boltz.py::smoke
+```
+
+This sends a 30-residue test peptide through Boltz's built-in ColabFold MSA fetcher → Boltz inference and prints the output. Expected:
+
+```
+Got <N> chars of mmCIF
+pTM=0.7..., ipTM=None, ranking_score=0.7...
+```
+
+First smoke run takes ~10–15 minutes (cold start + weight download + MSA + inference). Subsequent runs against the same sequence are ~3–5 min — the cache Volume persists the weight download, and ColabFold caches MSAs server-side.
+
+## Cost notes (Boltz)
+
+| Item | Approx. cost |
+|---|---|
+| H100 GPU runtime | ~$5/hr on-demand |
+| Typical single-protein job | 3–5 min wall time → **~$0.30–0.60 per run** |
+| Cache Volume storage | ~$0.10/month for ~2 GB |
+| First-deploy weight download | ~5 min × GPU rate = one-time ~$0.40 |
+
+Same per-second billing model as AF3; image build and weight-download GPU time are billed too, so the first run is the most expensive.
+
+## Troubleshooting (Boltz)
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `boltz: command not found` inside container | Image build failed silently | Re-deploy; check `modal logs` for the `pip install boltz==2.*` step |
+| Weights re-download every run | `cache_volume.commit()` not running, or Volume detached | Check the Modal dashboard; ensure the Volume is bound to the function |
+| `KeyError: 'plddt'` from `np.load` | Boltz changed `.npz` key names in a release | Update `inference/boltz_output.py` `_load_npz_array` calls |
+| `MissingOutputError: confidence_*.json` | Boltz changed output dir layout in a release | Verify against the [Boltz README](https://github.com/jwohlwend/boltz); update `read_boltz_outputs` |
+| MSA fetch times out (`--use_msa_server` fails) | ColabFold server under load | Retry; or run Boltz locally first to seed the ColabFold cache |
+| `CUDA out of memory` on long sequences | H100 80 GB still exhausted | Switch to multi-GPU or shrink the input (Boltz docs cover both) |
+
+## What this Function does (and doesn't)
+
+**Does:**
+- Accept the same `PredictionJob` dict that AF3 accepts (see [ADR 0001](../docs/decisions/0001-af3-input-mapping.md)) — model swappability is the whole point.
+- Convert it to Boltz YAML via `easyfold.boltz_input.build_boltz_yaml`.
+- Run `boltz predict <input.yaml> --use_msa_server --output_format mmcif`.
+- Parse outputs into the unified `ModelResult` shape (`inference/result.py`) — same shape AF3 returns. Boltz-specific raw JSON lives under `extras.confidence_summary`.
+
+**Doesn't:**
+- Support protein modifications yet (the UI doesn't expose them; will revisit when Task 3.4 lands).
+- Cache MSAs in EasyFold's layer (ColabFold caches server-side; the Modal Function is stateless beyond the weights Volume).
+- Run AlphaFold 3 (that's the `easyfold-af3` Function described above).

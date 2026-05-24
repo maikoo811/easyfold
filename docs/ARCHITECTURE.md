@@ -57,6 +57,14 @@ A running log of technical decisions. New decisions append a section below; deep
 - AF3 invocation is via `subprocess` to `run_alphafold.py` — the published CLI is more stable than AF3's internal Python API.
 - End-to-end inference is **not exercised in CI** (requires Google-approved weights + Modal credits). Pure-Python helpers have unit-test coverage; the Modal Function is verified at import time only.
 
+## Boltz-2 on Modal + unified `ModelResult` (Task 3.2)
+
+- **Boltz-2 inference runs as a sibling Modal Function** (`easyfold-boltz`) alongside `easyfold-af3`. MIT-licensed weights ship via `pip install boltz==2.*`, downloaded lazily on first run into the `easyfold-boltz-cache` Modal Volume mounted at `/root/.boltz`. No user-side weight provisioning step.
+- **Boltz YAML input** is produced by `easyfold.boltz_input.build_boltz_yaml(job)` from the same `PredictionJob` that AF3 consumes — single source of truth for job descriptions across models. Boltz expands homo-multimers to one entry per chain (vs AF3's list-of-ids collapsing). Excel-column chain IDs are reused so a given protein has stable chain identifiers across both models.
+- **MSAs come from Boltz's built-in ColabFold integration** via the `--use_msa_server` flag. We don't reuse our `colabfold.py` for Boltz — Boltz handles it natively, less coupling, no two-implementations-of-the-same-thing.
+- **Unified `ModelResult` dataclass** (`backend/easyfold/inference/result.py`) replaces 3.1's `AF3Outputs`. Both `read_af3_outputs` and `read_boltz_outputs` return it; the Function return is `ModelResult.to_dict()`. Model-specific raw confidence JSON is preserved under `extras` so the LLM interpretation pass keeps per-token detail.
+- **Independent deploys.** `./modal/deploy.sh af3` and `./modal/deploy.sh boltz` are separate Apps with separate images. Either runs without the other. See [ADR 0003](decisions/0003-boltz-on-modal-and-model-result.md) for the full rationale.
+
 ## Hosting
 
 - **Demo: Hugging Face Spaces** (CPU free tier). Pre-computed examples only; no live prediction.
