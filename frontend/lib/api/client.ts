@@ -1,3 +1,4 @@
+import type { JobCreateBody, JobStatus } from "./jobs";
 import type { FetchedSequence } from "./types";
 
 const API_BASE =
@@ -13,8 +14,22 @@ export class ApiRequestError extends Error {
   }
 }
 
-async function apiFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { signal });
+interface FetchOpts {
+  signal?: AbortSignal;
+  method?: "GET" | "POST";
+  body?: unknown;
+}
+
+async function apiFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
+  const init: RequestInit = {
+    method: opts.method ?? "GET",
+    signal: opts.signal,
+  };
+  if (opts.body !== undefined) {
+    init.headers = { "content-type": "application/json" };
+    init.body = JSON.stringify(opts.body);
+  }
+  const res = await fetch(`${API_BASE}${path}`, init);
 
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
@@ -36,7 +51,7 @@ export function fetchUniprot(
 ): Promise<FetchedSequence> {
   return apiFetch<FetchedSequence>(
     `/api/v1/sequences/uniprot/${encodeURIComponent(accession)}`,
-    signal,
+    { signal },
   );
 }
 
@@ -46,6 +61,20 @@ export function fetchRcsb(
 ): Promise<FetchedSequence> {
   return apiFetch<FetchedSequence>(
     `/api/v1/sequences/rcsb/${encodeURIComponent(pdbId)}`,
-    signal,
+    { signal },
   );
+}
+
+export function createJob(
+  body: JobCreateBody,
+  signal?: AbortSignal,
+): Promise<JobStatus> {
+  return apiFetch<JobStatus>(`/api/v1/jobs`, { method: "POST", body, signal });
+}
+
+export function getJob(
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<JobStatus> {
+  return apiFetch<JobStatus>(`/api/v1/jobs/${encodeURIComponent(jobId)}`, { signal });
 }

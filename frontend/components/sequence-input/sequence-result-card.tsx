@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import type { FetchedSequence } from "@/lib/api";
 
+import { PredictCta } from "./predict-cta";
+
 interface SequenceResultCardProps {
   data: FetchedSequence;
   onReset: () => void;
@@ -78,8 +80,9 @@ export function SequenceResultCard({
           </Button>
         </div>
       </CardContent>
-      <CardFooter>
-        <Button variant="ghost" size="sm" onClick={onReset}>
+      <CardFooter className="flex-col items-stretch gap-3">
+        <PredictCta sequence={data} />
+        <Button variant="ghost" size="sm" onClick={onReset} className="self-start">
           <RotateCcw className="size-3" />
           Start over
         </Button>
