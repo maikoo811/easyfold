@@ -65,6 +65,16 @@ A running log of technical decisions. New decisions append a section below; deep
 - **Unified `ModelResult` dataclass** (`backend/easyfold/inference/result.py`) replaces 3.1's `AF3Outputs`. Both `read_af3_outputs` and `read_boltz_outputs` return it; the Function return is `ModelResult.to_dict()`. Model-specific raw confidence JSON is preserved under `extras` so the LLM interpretation pass keeps per-token detail.
 - **Independent deploys.** `./modal/deploy.sh af3` and `./modal/deploy.sh boltz` are separate Apps with separate images. Either runs without the other. See [ADR 0003](decisions/0003-boltz-on-modal-and-model-result.md) for the full rationale.
 
+## Jobs API (Task 3.3)
+
+- `POST /api/v1/jobs` accepts `{model, job: PredictionJob}` and returns `{job_id, model, status: "pending", …}`. `job_id` is Modal's `FunctionCall.object_id` — **no separate job store, no DB**. State lives entirely in Modal.
+- `GET /api/v1/jobs/{job_id}` reconstructs the `FunctionCall` via `modal.FunctionCall.from_id(...)` and polls with `call.get(timeout=0)`. Status enum: `pending` (immediate post-spawn), `running` (in-flight on Modal), `succeeded` (returns full `ModelResult` under `result`), `failed` (error string under `error`).
+- **Lazy Modal Function lookup** per request via `modal.Function.from_name(app_name, func_name)`. Backend starts without either Function deployed; users see a clean 502 with the exact `./modal/deploy.sh boltz`/`af3` invocation if they haven't deployed yet.
+- All Modal-SDK contact lives in `backend/easyfold/inference/dispatch.py` — the route layer is mockable without ever importing `modal`. Tests cover both seams (route tests mock `dispatch.*`; dispatch tests mock `modal.Function.from_name` / `modal.FunctionCall.from_id`).
+- **Pydantic mirror** of `ModelResult` in `backend/easyfold/api/models.py` so OpenAPI docs are accurate; the dataclass stays canonical inside the Modal Function (no Pydantic dep needed in the container).
+- Frontend: `SequenceResultCard` adds a `PredictCta` (two-button model picker, Boltz-2 default). Clicking POSTs and navigates to `/predict/[jobId]?model=…`, which polls every 3 seconds and renders `StructureViewer` (mmCIF text → Blob URL) + `ConfidenceCharts` + `InterpretationPanel` on completion. `/predict/[jobId]` is split into a server-shell + client subcomponent so `generateStaticParams` works for the demo build.
+- See [ADR 0004](decisions/0004-jobs-api-modal-funcall-as-id.md) for the full design rationale and open questions (output Volume migration, retention, cancellation).
+
 ## Hosting
 
 - **Demo: Hugging Face Spaces** (CPU free tier). Pre-computed examples only; no live prediction.

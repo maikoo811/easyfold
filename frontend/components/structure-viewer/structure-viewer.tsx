@@ -64,8 +64,10 @@ function loadMolstar(): Promise<MolstarGlobal> {
 }
 
 interface StructureViewerProps {
-  /** URL of the structure file. Defaults to the bundled 1TUP fixture. */
+  /** URL of the structure file. Defaults to the bundled 1TUP fixture when neither `url` nor `cif` is provided. */
   url?: string;
+  /** mmCIF text content. When provided, takes precedence over `url` — we wrap it in a Blob URL. */
+  cif?: string;
   /** Source file format. mmCIF is preferred. */
   format?: "mmcif" | "pdb";
   /** Container height in CSS pixels. */
@@ -73,7 +75,8 @@ interface StructureViewerProps {
 }
 
 export function StructureViewer({
-  url = "/fixtures/1tup.cif",
+  url,
+  cif,
   format = "mmcif",
   height = 520,
 }: StructureViewerProps) {
@@ -87,6 +90,18 @@ export function StructureViewer({
 
     let cancelled = false;
     let viewer: MolstarViewer | null = null;
+    let blobUrl: string | null = null;
+
+    // Mol*'s bundled UMD only loads from URLs, not from strings. For an in-memory
+    // mmCIF (live prediction result) we wrap it in a Blob URL and revoke on unmount.
+    let targetUrl: string;
+    if (cif) {
+      const blob = new Blob([cif], { type: "chemical/x-mmcif" });
+      blobUrl = URL.createObjectURL(blob);
+      targetUrl = blobUrl;
+    } else {
+      targetUrl = url ?? "/fixtures/1tup.cif";
+    }
 
     (async () => {
       try {
@@ -97,7 +112,7 @@ export function StructureViewer({
           viewer.dispose();
           return;
         }
-        await viewer.loadStructureFromUrl(url, format);
+        await viewer.loadStructureFromUrl(targetUrl, format);
         if (!cancelled) setLoading(false);
       } catch (err) {
         if (!cancelled) {
@@ -110,8 +125,9 @@ export function StructureViewer({
     return () => {
       cancelled = true;
       viewer?.dispose();
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-  }, [url, format]);
+  }, [url, cif, format]);
 
   return (
     <div

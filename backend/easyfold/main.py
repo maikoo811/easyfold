@@ -10,6 +10,11 @@ from easyfold.external import (
     MalformedExternalResponse,
     SequenceNotFound,
 )
+from easyfold.inference.dispatch import (
+    JobNotFound,
+    ModalDispatchError,
+    ModalFunctionNotDeployed,
+)
 
 app = FastAPI(title="EasyFold API", version="0.1.0")
 
@@ -36,4 +41,19 @@ async def _source_unavailable(_request: object, exc: ExternalSourceUnavailable) 
 
 @app.exception_handler(MalformedExternalResponse)
 async def _malformed_response(_request: object, exc: MalformedExternalResponse) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+
+@app.exception_handler(JobNotFound)
+async def _job_not_found(_request: object, exc: JobNotFound) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(ModalFunctionNotDeployed)
+async def _modal_not_deployed(_request: object, exc: ModalFunctionNotDeployed) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+
+@app.exception_handler(ModalDispatchError)
+async def _modal_dispatch_error(_request: object, exc: ModalDispatchError) -> JSONResponse:
     return JSONResponse(status_code=502, content={"detail": str(exc)})

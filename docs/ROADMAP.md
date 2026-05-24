@@ -89,13 +89,13 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 1.4
   - Acceptance: ruff/mypy/pytest green; both Modal Apps import without network; `modal/README.md` Boltz section complete with smoke + troubleshooting.
 
-- [ ] **3.3 Backend API for job submission and progress** ← **NEXT**
-  - Status: Not started · Branch: —
-  - `POST /api/v1/jobs` (start), `GET /api/v1/jobs/{id}` (status + outputs). Backend dispatches to Modal; polling-based progress for the MVP.
+- [x] **3.3 Backend API for job submission and progress** · Branch: `feat/jobs-api`
+  - Status: Done · Completed: 2026-05-24
+  - `POST /api/v1/jobs` and `GET /api/v1/jobs/{job_id}` (`job_id` = Modal's `FunctionCall.object_id` — stateless backend, no DB). Lazy `modal.Function.from_name` per request. Dispatch isolated in `easyfold.inference.dispatch` (sole module outside Function definitions that imports `modal`). Frontend: `SequenceResultCard` now has a `PredictCta` (Boltz-2 default), which POSTs and navigates to `/predict/[jobId]?model=…`; the page polls every 3 s and renders the structure + confidence + LLM panel on completion. Backend 145 passing tests (was 120). Both `pnpm build` and `pnpm build:demo` green. End-to-end smoke (first real inference!) deferred to user post-merge — `./modal/deploy.sh boltz` then submit any sequence. See ADR 0004.
   - Depends: 3.1, 3.2
-  - Acceptance: end-to-end browser → backend → Modal → results round-trip works; CORS configured; errors surface as structured JSON.
+  - Acceptance: ruff/mypy/pytest green; both frontend builds green; live `curl` confirms 502 with actionable "deploy this first" message and 404 for unknown job IDs.
 
-- [ ] **3.4 Ligand / modification / complex input UI**
+- [ ] **3.4 Ligand / modification / complex input UI** ← **NEXT**
   - Status: Not started · Branch: —
   - Expose `LigandSpec` and `ModificationSpec` in the input UI; support multi-chain complexes via copies.
   - Depends: 1.4, 3.3

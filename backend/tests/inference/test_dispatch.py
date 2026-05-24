@@ -1,0 +1,174 @@
+"""Unit tests for the Modal SDK wrapper.
+
+We mock ``modal.Function.from_name`` and ``modal.FunctionCall.from_id``
+directly so these tests never touch the network. The route layer tests
+(``tests/api/test_jobs.py``) mock at the next-higher seam (the
+``dispatch`` module functions themselves), so this file is the only
+place that needs to reason about the SDK's exception classes.
+"""
+
+from typing import Any
+from unittest.mock import MagicMock
+
+import modal.exception
+import pytest
+
+from easyfold.inference import dispatch
+from easyfold.inference.dispatch import (
+    JobNotFound,
+    ModalDispatchError,
+    ModalFunctionNotDeployed,
+    poll_prediction,
+    spawn_prediction,
+)
+
+# ── spawn_prediction ─────────────────────────────────────────────────
+
+
+def test_spawn_returns_function_call_object_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_call = MagicMock(object_id="fc-deadbeef")
+    fake_func = MagicMock()
+    fake_func.spawn.return_value = fake_call
+    monkeypatch.setattr(dispatch.modal.Function, "from_name", lambda *_a, **_kw: fake_func)
+
+    result = spawn_prediction("boltz2", {"name": "smoke", "sequences": []})
+
+    assert result == "fc-deadbeef"
+    fake_func.spawn.assert_called_once_with({"name": "smoke", "sequences": []})
+
+
+def test_spawn_raises_not_deployed_with_helpful_message(monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(*_args: Any, **_kwargs: Any) -> Any:
+        raise modal.exception.NotFoundError("App easyfold-boltz not found")
+
+    monkeypatch.setattr(dispatch.modal.Function, "from_name", boom)
+
+    with pytest.raises(ModalFunctionNotDeployed) as excinfo:
+        spawn_prediction("boltz2", {})
+    msg = str(excinfo.value)
+    assert "easyfold-boltz" in msg
+    assert "./modal/deploy.sh boltz" in msg
+
+
+def test_spawn_translates_unknown_modal_error_to_dispatch_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_func = MagicMock()
+    fake_func.spawn.side_effect = modal.exception.AuthError("not logged in")
+    monkeypatch.setattr(dispatch.modal.Function, "from_name", lambda *_a, **_kw: fake_func)
+
+    with pytest.raises(ModalDispatchError, match="not logged in"):
+        spawn_prediction("alphafold3", {})
+
+
+def test_spawn_translates_message_based_not_found_from_spawn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Real-life Modal SDK: `Function.from_name` is lazy; the actual
+    "App not found" surfaces from `spawn()` as a generic `Error`, not
+    as the typed `NotFoundError`. We translate by message."""
+    fake_func = MagicMock()
+    fake_func.spawn.side_effect = modal.exception.ExecutionError(
+        "Lookup failed for Function 'run_boltz' from the 'easyfold-boltz' app: "
+        "App 'easyfold-boltz' not found in environment 'main'."
+    )
+    monkeypatch.setattr(dispatch.modal.Function, "from_name", lambda *_a, **_kw: fake_func)
+
+    with pytest.raises(ModalFunctionNotDeployed) as excinfo:
+        spawn_prediction("boltz2", {})
+    assert "./modal/deploy.sh boltz" in str(excinfo.value)
+
+
+# ── poll_prediction ──────────────────────────────────────────────────
+
+
+def test_poll_returns_running_when_get_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_call = MagicMock()
+    fake_call.get.side_effect = TimeoutError("not ready")
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, result, error = poll_prediction("fc-xxx")
+    assert status == "running"
+    assert result is None
+    assert error is None
+
+
+def test_poll_returns_succeeded_with_result_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = {"model": "boltz2", "name": "smoke", "cif": "data_x\n"}
+    fake_call = MagicMock()
+    fake_call.get.return_value = payload
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, result, error = poll_prediction("fc-ok")
+    assert status == "succeeded"
+    assert result == payload
+    assert error is None
+
+
+def test_poll_returns_failed_when_remote_function_raised(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_call = MagicMock()
+    fake_call.get.side_effect = modal.exception.RemoteError("subprocess returned non-zero")
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, result, error = poll_prediction("fc-bad")
+    assert status == "failed"
+    assert result is None
+    assert error is not None and "subprocess returned non-zero" in error
+
+
+def test_poll_raises_job_not_found_for_unknown_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(_id: str) -> Any:
+        raise modal.exception.NotFoundError("no such call")
+
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", boom)
+
+    with pytest.raises(JobNotFound, match="fc-missing"):
+        poll_prediction("fc-missing")
+
+
+def test_poll_translates_message_based_not_found_from_from_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Real-life Modal SDK raises a generic `Error` (not `NotFoundError`)
+    with "No Function Call with ID ..." for unknown ids. Translate by message."""
+
+    def boom(_id: str) -> Any:
+        raise modal.exception.ExecutionError(
+            "No Function Call with ID 'fc-doesnotexist' found."
+        )
+
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", boom)
+
+    with pytest.raises(JobNotFound, match="fc-doesnotexist"):
+        poll_prediction("fc-doesnotexist")
+
+
+def test_poll_raises_job_not_found_for_expired_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_call = MagicMock()
+    fake_call.get.side_effect = modal.exception.OutputExpiredError("garbage collected")
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    with pytest.raises(JobNotFound, match="expired"):
+        poll_prediction("fc-stale")
+
+
+def test_poll_raises_dispatch_error_for_unknown_modal_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_call = MagicMock()
+    fake_call.get.side_effect = modal.exception.AuthError("token expired")
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    with pytest.raises(ModalDispatchError, match="token expired"):
+        poll_prediction("fc-auth")
+
+
+def test_poll_raises_when_function_returned_non_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_call = MagicMock()
+    fake_call.get.return_value = "unexpected string"
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    with pytest.raises(ModalDispatchError, match="expected dict"):
+        poll_prediction("fc-weird")
