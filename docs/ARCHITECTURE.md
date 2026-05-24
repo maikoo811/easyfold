@@ -49,6 +49,14 @@ A running log of technical decisions. New decisions append a section below; deep
 - AF3 version pin: `dialect = "alphafold3"`, `version = 4`. Validator accepts versions `{1, 2, 3, 4}`. Bumping AF3 means changing the constant + adding to the allow-set.
 - See [ADR 0001](decisions/0001-af3-input-mapping.md) for the full rationale.
 
+## AF3 on Modal (Task 3.1)
+
+- AlphaFold 3 inference runs as a **Modal Function** in the user's own Modal account (zero-hosting OSS — see [ADR 0002](decisions/0002-af3-on-modal.md)). H100 GPU, weights mounted read-only from a user-provisioned `easyfold-af3-weights` Modal Volume.
+- **MSAs come from ColabFold's public mmseqs2 server** at request time. AF3 runs with `--norun_data_pipeline`. Sidesteps the multi-hundred-GB AF3 database mount and multi-hour MSA build.
+- Python code lives in `backend/easyfold/inference/`: `af3.py` (Modal App), `colabfold.py` (MSA fetch), `input_prep.py` (disk-layout helpers), `output_parse.py` (read AF3 outputs into a dict). The repo's `/modal/` directory holds deployment metadata (`README.md` provisioning guide, `deploy.sh`).
+- AF3 invocation is via `subprocess` to `run_alphafold.py` — the published CLI is more stable than AF3's internal Python API.
+- End-to-end inference is **not exercised in CI** (requires Google-approved weights + Modal credits). Pure-Python helpers have unit-test coverage; the Modal Function is verified at import time only.
+
 ## Hosting
 
 - **Demo: Hugging Face Spaces** (CPU free tier). Pre-computed examples only; no live prediction.

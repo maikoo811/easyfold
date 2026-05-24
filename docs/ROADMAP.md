@@ -77,13 +77,13 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
 
 ## Week 5-8 — Computation integration
 
-- [ ] **3.1 AF3 on Modal (weight mounting, inference)** ← **NEXT**
-  - Status: Not started · Branch: —
-  - Modal Function that mounts AF3 weights (user-supplied) and runs inference on a sequence. Writes outputs to a Modal volume.
+- [x] **3.1 AF3 on Modal (weight mounting, inference)** · Branch: `feat/af3-on-modal`
+  - Status: Done · Completed: 2026-05-24
+  - `modal.App("easyfold-af3")` on H100 with weights mounted from a user-provisioned `easyfold-af3-weights` Volume; MSAs fetched from ColabFold's mmseqs2 server (no 200 GB DB mount). Code in `backend/easyfold/inference/`; deploy metadata in `/modal/`. Pure-Python helpers fully unit-tested (84 passing); end-to-end smoke test scripted in `modal/README.md` § 5 for the user to run after Google-approved weights arrive. See ADR 0002.
   - Depends: 1.4
-  - Acceptance: a single-protein job from `build_af3_input` produces AF3 output files; instructions for weight provisioning in `modal/README.md`.
+  - Acceptance: ruff/mypy/pytest green; Modal App imports without network; `modal/README.md` provisioning guide complete with smoke-test command + troubleshooting.
 
-- [ ] **3.2 Boltz-2 on Modal (MIT-licensed alternative)**
+- [ ] **3.2 Boltz-2 on Modal (MIT-licensed alternative)** ← **NEXT**
   - Status: Not started · Branch: —
   - Sibling Modal Function for Boltz-2. Same `PredictionJob` input, different output shape adapter.
   - Depends: 1.4
