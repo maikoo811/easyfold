@@ -6,6 +6,12 @@ EasyFold differs from existing tools by starting from *the scientific question* 
 
 **Status:** early skeleton — not yet usable. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the technical plan and [`CLAUDE.md`](CLAUDE.md) for project conventions.
 
+## Try the demo
+
+A static, pre-computed demo runs on Hugging Face Spaces — three structures (1TUP, 1CRN, 6LU7) with Mol\* viewer, pLDDT / PAE charts, and BYOK Claude-API natural-language interpretation. Confidence values in the demo are synthetic for now; real AlphaFold output lands in the self-hosted deployment.
+
+- **Live demo**: link TBD (deploy script lives at `demo/deploy.sh` — see [`demo/README.md`](demo/README.md))
+
 ## Repository layout
 
 ```
@@ -13,7 +19,7 @@ easyfold/
 ├── frontend/   Next.js 15 + TypeScript + Tailwind + shadcn/ui
 ├── backend/    FastAPI + Pydantic v2
 ├── modal/      Modal Functions for production deployment (TBD)
-├── demo/       Hugging Face Spaces demo (TBD)
+├── demo/       Hugging Face Spaces demo (deploy script + README)
 ├── scripts/    Dev utilities
 ├── tests/      Cross-cutting end-to-end tests
 └── docs/       ARCHITECTURE.md, ADRs

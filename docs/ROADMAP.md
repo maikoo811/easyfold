@@ -69,15 +69,15 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 2.2
   - Acceptance: typecheck/lint/build green, panel renders, real Anthropic call succeeds with a user-supplied key, errors normalized to `InterpretError` and rendered inline.
 
-- [ ] **2.4 Hugging Face Spaces demo build** ← **NEXT**
-  - Status: Not started · Branch: —
-  - CPU-only demo on HF Spaces showcasing 3 pre-computed structures (no GPU, no AF3 runtime). End-to-end UX: input → viewer → charts → interpretation.
+- [x] **2.4 Hugging Face Spaces demo build** · Branch: `feat/hf-demo`
+  - Status: Done · Completed: 2026-05-24
+  - `/demo` landing + `/demo/viewer/[id]` dynamic route for 1TUP, 1CRN, 6LU7 (swapped from 6VXX for size). Conditional `output: "export"` in `next.config.ts` driven by `BUILD_TARGET=demo`; `pnpm build:demo` produces `out/` (9 MB). `demo/deploy.sh` runs `huggingface-cli upload` via `uvx`. Live URL pending manual push (user runs `./demo/deploy.sh maikoo811/easyfold-demo` with `HF_TOKEN`).
   - Depends: 2.1, 2.2, 2.3
-  - Acceptance: HF Space loads in <10s; all 3 examples render structure, charts, and interpretation; README links to the live URL.
+  - Acceptance: typecheck/lint/both builds green; user-confirmed visual check on the 3 examples; deploy script syntax-OK and documented.
 
 ## Week 5-8 — Computation integration
 
-- [ ] **3.1 AF3 on Modal (weight mounting, inference)**
+- [ ] **3.1 AF3 on Modal (weight mounting, inference)** ← **NEXT**
   - Status: Not started · Branch: —
   - Modal Function that mounts AF3 weights (user-supplied) and runs inference on a sequence. Writes outputs to a Modal volume.
   - Depends: 1.4

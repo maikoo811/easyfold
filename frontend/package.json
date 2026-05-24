@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:demo": "BUILD_TARGET=demo next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
