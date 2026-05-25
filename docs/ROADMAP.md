@@ -109,11 +109,11 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 4.1 (formally; pulled ahead per the agreed pre-Public sweet-spot path — 4.1's deploy button slots into the Quickstart's step 3 when it ships)
   - Acceptance: README renders cleanly on github.com; HF demo returns 200 + visual check passes; license table covers academic / commercial / PTM / "just trying it" cases.
 
-- [~] **4.5 Test coverage hardening (Tier 1 + Tier 2)** · Branch: `chore/test-coverage-hardening`
-  - Status: In progress · Started: 2026-05-25
-  - Frontend Vitest setup + ~25–30 pure-function tests for `lib/assembly.ts`, `use-assembly-builder` reducer, `chain-ids.ts`. Backend ~25–30 new edge-case tests across parsers / routes / validators, 5 `hypothesis` property tests, and an OpenAPI schema snapshot test with regen script. Wires `pnpm test` into CI's frontend job.
+- [x] **4.5 Test coverage hardening (Tier 1 + Tier 2)** · Branch: `chore/test-coverage-hardening`
+  - Status: Done · Completed: 2026-05-25
+  - Frontend Vitest setup + 54 pure-function tests for `lib/assembly.ts` (toJobBody converter + helpers), the `use-assembly-builder` reducer, and `chain-ids.ts`. Backend 146 → 185 passing (+32 example-based edge cases across parsers / routes / validators, +5 `hypothesis` property tests in `tests/test_properties.py`, +2 OpenAPI schema snapshot tests with regen script at `backend/scripts/update_openapi_snapshot.py`). CI's frontend job gained a `pnpm test` step.
   - Depends: 4.3
-  - Acceptance: frontend `pnpm test` green with ≥25 tests; backend `uv run pytest` green with ≥185 tests; mypy/ruff still clean; OpenAPI snapshot test passes + regen script idempotent; CI green on both jobs.
+  - Acceptance: frontend `pnpm test` green with 54 tests; backend `uv run pytest` green with 185 tests; mypy/ruff still clean; OpenAPI snapshot test passes + regen script is idempotent; CI on PR #18 green on both jobs.
 
 - [ ] **5.2 Public release** ← **NEXT**
   - Status: Not started · Branch: —
