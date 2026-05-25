@@ -256,3 +256,18 @@ Same per-second billing model as AF3; image build and weight-download GPU time a
 - Support protein modifications yet (the UI doesn't expose them; will revisit when Task 3.4 lands).
 - Cache MSAs in EasyFold's layer (ColabFold caches server-side; the Modal Function is stateless beyond the weights Volume).
 - Run AlphaFold 3 (that's the `easyfold-af3` Function described above).
+
+---
+
+# Running the FastAPI backend in production
+
+The Modal Functions above are the heavy half of EasyFold. The other half — the FastAPI backend in `backend/easyfold/` — spawns those Functions and polls the result. The top-level [README Quickstart](../README.md) runs it locally via `uvicorn easyfold.main:app --reload`. If you self-host it on a real host, override **CORS** so the browser can reach it from your real frontend domain:
+
+```bash
+EASYFOLD_CORS_ORIGINS=https://your-frontend.example.com,https://staging.example.com \
+  uv run uvicorn easyfold.main:app --host 0.0.0.0 --port 8000
+```
+
+The default (`http://localhost:3000,http://localhost:3001`) is for local development only. Comma-separated; no wildcard support intentionally. Credentials are not used (`allow_credentials=False`), so the methods/headers wildcards are safe.
+
+The backend is stateless — no DB, no session store — so any standard process supervisor (systemd, Modal `@modal.asgi_app`, Fly Machines, Render, …) works. If you also need to serve the frontend's `next build` output, point your reverse proxy / CDN at `frontend/.next/` and set the frontend's `NEXT_PUBLIC_API_URL` to your backend host.

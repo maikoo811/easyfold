@@ -109,6 +109,20 @@ The backend is **stateless** — jobs are tracked by Modal's `FunctionCall.objec
 
 Deeper detail: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and the [`docs/decisions/`](docs/decisions/) ADRs.
 
+### What leaves your machine
+
+EasyFold is zero-hosting and we never see your data, but a prediction still reaches a few third parties. Worth scanning the table before you run anything IP-sensitive:
+
+| Destination | What's sent | When |
+|---|---|---|
+| **[api.colabfold.com](https://colabfold.mmseqs.com/)** (ColabFold mmseqs2 MSA server) | Your **protein sequence** (one-letter amino acids) | On every prediction — Boltz fetches the MSA via `--use_msa_server`. |
+| **[rest.uniprot.org](https://www.uniprot.org/)** / **[data.rcsb.org](https://www.rcsb.org/)** | The **accession or PDB ID** you typed (e.g. `P04637`, `1TUP`). **No sequence is sent** — the lookup is by ID. | Only when you use the UniProt / PDB lookup tabs. |
+| **[api.anthropic.com](https://www.anthropic.com/)** | The prediction's **summary stats** (mean pLDDT, % low-confidence, PAE percentiles, pTM/ipTM) + your free-text question + the model's reply. **No full sequence or raw PAE matrix is sent.** Your own [Anthropic API key](https://console.anthropic.com/) — held only in browser memory (never persisted, never relayed through our backend). | Only when you click **Interpret**. |
+
+If you're handling IP-sensitive sequences, the ColabFold step is the one to scrutinize. Self-hosting a ColabFold mmseqs2 server (the project publishes the Docker image) is the supported escape hatch.
+
+Security reports: see [`SECURITY.md`](SECURITY.md).
+
 ---
 
 ## Pick a model
