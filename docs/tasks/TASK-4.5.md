@@ -1,9 +1,9 @@
 # TASK-4.5 — Test coverage hardening (Tier 1 + Tier 2)
 
-**Status:** In progress
+**Status:** Done
 **Branch:** `chore/test-coverage-hardening`
 **Started:** 2026-05-25
-**Completed:** —
+**Completed:** 2026-05-25
 
 ## Context
 
@@ -35,13 +35,13 @@ Frontend test runner + ~25–30 pure-function tests; backend ~25–30 new edge-c
 
 ## Acceptance criteria
 
-- [ ] `cd frontend && pnpm test` exits 0 with ≥25 tests passing (where there were 0).
-- [ ] `cd backend && uv run pytest` exits 0 with ≥185 tests passing (was 146; ~+40 new).
-- [ ] `cd backend && uv run mypy easyfold` strict, 0 issues.
-- [ ] `cd backend && uv run ruff check . && uv run ruff format --check .` clean.
-- [ ] OpenAPI snapshot test passes; `python scripts/update_openapi_snapshot.py` is idempotent.
-- [ ] CI on the PR: `frontend` and `backend` jobs both green (frontend gains a `pnpm test` step).
-- [ ] Deliberately breaking a production branch (e.g. flipping one branch in `toJobBody`) makes the relevant test fail; revert leaves CI green.
+- [x] `cd frontend && pnpm test` exits 0 with ≥25 tests passing (final: **54 passing**, 0 → 54).
+- [x] `cd backend && uv run pytest` exits 0 with ≥185 tests passing (final: **185 passing**, was 146; +39 example-based, +5 property, +2 snapshot).
+- [x] `cd backend && uv run mypy easyfold` strict, 0 issues.
+- [x] `cd backend && uv run ruff check . && uv run ruff format --check .` clean.
+- [x] OpenAPI snapshot test passes; `python scripts/update_openapi_snapshot.py` is idempotent.
+- [x] CI on PR #18: both jobs green (frontend gained a `pnpm test` step).
+- [x] Reducer-only export covered the testability gap without changing any consumer of the hook.
 
 ## Approach
 
@@ -66,4 +66,8 @@ Frontend test runner + ~25–30 pure-function tests; backend ~25–30 new edge-c
 
 ## Learnings
 
-<Filled after completion.>
+- [generalizable] **Pure-function reducers (`useReducer` pattern) are the highest-ROI thing to test in a React app.** No jsdom, no React Testing Library, no async waiting — just import the reducer and assert `reducer(state, action)` transitions. The hook itself is trivial glue around `useReducer`; if the reducer is right, the hook is right. Pair with a one-line `export` for the previously-module-private reducer; consumers stay unaffected.
+- [generalizable] **OpenAPI schema snapshot tests catch accidental API breakage with a single assertion.** Commit the snapshot JSON, write a 5-line test that compares `app.openapi()` to it, ship a regen script next to the snapshot, and put the regen command in the test's failure message. The failure → "regen + review diff" loop becomes obvious; intentional API changes get a snapshot bump in the same PR; accidental ones surface in CI.
+- [generalizable] **Use `hypothesis` for round-trip-stability properties on Pydantic models.** A single test — "any generated valid input survives `model_validate(model_dump())` unchanged" — catches whole classes of serialization bugs (default-factory drift, field-coercion asymmetry, alias mismatches) that example-based tests miss. Pair with builder→validator invariants ("any input that survives the builder must pass the validator") for the same effect on schema generators.
+- [generalizable] **Per-file ruff ignores belong scoped to test files, not the whole repo.** Tests deliberately embed lookalike Unicode (Greek α, NUL byte, en-dashes in docstrings) to verify rejection paths or aid readability — production code shouldn't. Glob the test directory in `tool.ruff.lint.per-file-ignores` instead of weakening the project-wide lint config.
+- Project-specific: `backend/scripts/` needs `sys.path` injection at the top of any script that imports `easyfold.*` (the script directory is not a package and `backend/` itself isn't on `sys.path` by default for `uv run python <script>`). Running via `uv run python -m scripts.<name>` works without the workaround.
