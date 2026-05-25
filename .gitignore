@@ -47,3 +47,10 @@ yarn-error.log*
 .cache/
 .turbo/
 coverage/
+
+# Per-contributor agent configs (e.g. AGENTS.md for OpenAI Codex,
+# .cursor/ for Cursor). These are personal workflow files that vary
+# per contributor; the project canonical agent contract lives in
+# CLAUDE.md (which IS tracked).
+AGENTS.md
+.cursor/
