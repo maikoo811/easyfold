@@ -63,7 +63,14 @@ def read_boltz_outputs(out_dir: Path, *, job_name: str) -> ModelResult:
 
     plddt: list[float] = []
     if plddt_path.is_file():
-        plddt = _load_npz_array(plddt_path, "plddt").tolist()
+        raw_plddt = _load_npz_array(plddt_path, "plddt")
+        # Boltz-2 writes pLDDT in 0-1 range; the unified ModelResult contract is
+        # 0-100 (AF3 convention, what the /demo/viewer Recharts series expects).
+        # Verified on first real end-to-end run 2026-05-24: a Boltz output of
+        # ~0.9 means pLDDT 90. Scale up when values look 0-1 (heuristic: max<=1).
+        if raw_plddt.size > 0 and float(raw_plddt.max()) <= 1.0:
+            raw_plddt = raw_plddt * 100.0
+        plddt = raw_plddt.tolist()
 
     pae: list[list[float]] | None = None
     if pae_path.is_file():

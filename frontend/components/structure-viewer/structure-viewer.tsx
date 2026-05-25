@@ -8,9 +8,39 @@ interface MolstarViewer {
   loadStructureFromUrl: (url: string, format: string) => Promise<void>;
 }
 
-interface MolstarGlobal {
-  Viewer: { create: (host: HTMLElement) => Promise<MolstarViewer> };
+interface MolstarLayoutOptions {
+  layoutIsExpanded?: boolean;
+  layoutShowControls?: boolean;
+  layoutShowRemoteState?: boolean;
+  layoutShowSequence?: boolean;
+  layoutShowLog?: boolean;
+  layoutShowLeftPanel?: boolean;
+  viewportShowExpand?: boolean;
+  viewportShowSelectionMode?: boolean;
 }
+
+interface MolstarGlobal {
+  Viewer: {
+    create: (
+      host: HTMLElement,
+      options?: MolstarLayoutOptions,
+    ) => Promise<MolstarViewer>;
+  };
+}
+
+/** Pass these to `Viewer.create` to suppress Mol*'s side panels and chrome —
+ * we want a clean contained viewer; the user gets confidence charts + the
+ * LLM interpretation panel below it instead. */
+const VIEWER_OPTIONS: MolstarLayoutOptions = {
+  layoutIsExpanded: false,
+  layoutShowControls: false,
+  layoutShowRemoteState: false,
+  layoutShowSequence: false,
+  layoutShowLog: false,
+  layoutShowLeftPanel: false,
+  viewportShowExpand: false,
+  viewportShowSelectionMode: false,
+};
 
 declare global {
   interface Window {
@@ -107,7 +137,7 @@ export function StructureViewer({
       try {
         const molstar = await loadMolstar();
         if (cancelled) return;
-        viewer = await molstar.Viewer.create(host);
+        viewer = await molstar.Viewer.create(host, VIEWER_OPTIONS);
         if (cancelled) {
           viewer.dispose();
           return;

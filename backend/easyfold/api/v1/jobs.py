@@ -24,7 +24,7 @@ async def create_job(request: JobCreateRequest) -> JobStatusResponse:
     The response always carries ``status="pending"`` — we don't poll
     Modal here. The frontend's first GET will flip it to ``"running"``.
     """
-    job_id = spawn_prediction(request.model, request.job.model_dump())
+    job_id = await spawn_prediction(request.model, request.job.model_dump())
     return JobStatusResponse(
         job_id=job_id,
         model=request.model,
@@ -37,7 +37,7 @@ async def create_job(request: JobCreateRequest) -> JobStatusResponse:
 @router.get("/{job_id}", response_model=JobStatusResponse)
 async def get_job(job_id: str) -> JobStatusResponse:
     """Return current status (and result/error if terminal) for a job."""
-    status, result_dict, error = poll_prediction(job_id)
+    status, result_dict, error = await poll_prediction(job_id)
     result_model = ModelResultModel.model_validate(result_dict) if result_dict is not None else None
     return JobStatusResponse(
         job_id=job_id,

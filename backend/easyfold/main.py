@@ -18,7 +18,13 @@ from easyfold.inference.dispatch import (
 
 app = FastAPI(title="EasyFold API", version="0.1.0")
 
-_cors_origins = os.environ.get("EASYFOLD_CORS_ORIGINS", "http://localhost:3000")
+# Default includes both 3000 and 3001 because Next.js dev auto-falls-back to
+# 3001 when 3000 is busy — a common dev-time footgun. Override via env var if
+# you run the frontend on a different port.
+_cors_origins = os.environ.get(
+    "EASYFOLD_CORS_ORIGINS",
+    "http://localhost:3000,http://localhost:3001",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _cors_origins.split(",")],

@@ -15,7 +15,7 @@ set -euo pipefail
 TARGET="${1:-af3}"
 case "$TARGET" in
   af3)   MODULE="easyfold/inference/af3.py"   ;;
-  boltz) MODULE="easyfold/inference/boltz.py" ;;
+  boltz) MODULE="easyfold/inference/boltz_app.py" ;;
   *)     echo "Usage: $0 [af3|boltz]" >&2; exit 1 ;;
 esac
 

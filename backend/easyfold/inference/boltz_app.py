@@ -1,5 +1,13 @@
 """Boltz-2 inference as a Modal Function.
 
+**File name note**: this module is ``boltz_app.py`` rather than ``boltz.py``
+because Modal copies the deployed file to ``/root/<basename>.py`` inside the
+container and adds ``/root`` to ``sys.path``. A file named ``boltz.py`` there
+shadows the installed ``boltz`` PyPI package — Python finds ``/root/boltz.py``
+first when the ``boltz`` CLI does ``from boltz.main import cli`` and crashes
+with ``'boltz' is not a package``. Same class of foot-gun as ADR 0002's
+``/modal/`` directory rule, but at the file-name level.
+
 Sibling to ``easyfold-af3`` (Task 3.1). Boltz-2 is MIT-licensed and
 distributes its weights via ``pip install boltz`` — no Google approval,
 no separate weight provisioning. The first run after deploy downloads
@@ -43,7 +51,33 @@ app = modal.App(APP_NAME)
 boltz_image = (
     modal.Image.from_registry("pytorch/pytorch:2.4.1-cuda12.4-cudnn9-runtime", add_python="3.11")
     .apt_install("git")
-    .pip_install("boltz==2.*", "pyyaml==6.*")
+    # IMPORTANT: with ``add_local_python_source("easyfold")`` below, *every*
+    # runtime dep the mounted ``easyfold`` package imports must be present in
+    # the image — Python walks the import graph at container start, and any
+    # missing dep aborts the container. Keep this list in sync with
+    # ``pyproject.toml`` ``[project] dependencies``.
+    #   - boltz / pyyaml — direct CLI usage
+    #   - pydantic       — easyfold.af3_input.models
+    #   - httpx          — easyfold.inference.colabfold (re-exported by inference/__init__)
+    #   - numpy          — easyfold.inference.boltz_output
+    .pip_install(
+        "boltz==2.*",
+        "pyyaml==6.*",
+        "pydantic>=2",
+        "httpx>=0.28",
+        # boltz pins numpy<2.0 (>=1.26); our parser only uses tolist() + astype(float)
+        # which work in both 1.x and 2.x, so loosen to match what boltz allows.
+        "numpy>=1.26,<2",
+        # NVIDIA's triangular-attention kernels. Boltz's ``boltz/model/layers/
+        # triangular_mult.py::kernel_triangular_mult`` imports this UNCONDITIONALLY
+        # when ``use_kernels=True`` (the CLI default), so it's de-facto required
+        # for running predictions even though Boltz lists it as optional.
+        "cuequivariance-torch",
+    )
+    # Mount the local ``easyfold`` package source into the container so the
+    # function module can ``from easyfold.boltz_input import ...``. Without
+    # this, Modal only copies the file being deployed (``boltz.py``).
+    .add_local_python_source("easyfold")
 )
 
 # create_if_missing=True (vs AF3's strict False): Boltz has no manual
@@ -78,7 +112,11 @@ def run_boltz(job_dict: dict[str, Any]) -> dict[str, Any]:
 
     with tempfile.TemporaryDirectory() as workdir_str:
         workdir = Path(workdir_str)
-        input_path = workdir / "input.yaml"
+        # Boltz uses the YAML input filename's stem as the output directory key
+        # (writes to ``<out>/boltz_results_<stem>/predictions/<stem>/``). Name
+        # the input after ``job.name`` so the layout matches what
+        # ``read_boltz_outputs(..., job_name=job.name)`` expects.
+        input_path = workdir / f"{job.name}.yaml"
         input_path.write_text(yaml_text)
         output_dir = workdir / "out"
 
@@ -91,6 +129,13 @@ def run_boltz(job_dict: dict[str, Any]) -> dict[str, Any]:
             "--use_msa_server",  # Boltz's native ColabFold integration
             "--output_format",
             "mmcif",
+            # Disable optimized triangular-attention kernels. They require
+            # ``cuequivariance-ops-torch`` (NVIDIA's CUDA-compiled native ops),
+            # which has strict CUDA / PyTorch ABI requirements and isn't
+            # straightforward to install in our PyTorch 2.4 / CUDA 12.4 image.
+            # The slow path is 2-3x slower but works out of the box. Revisit
+            # if inference latency becomes a UX issue at scale.
+            "--no_kernels",
         ]
         subprocess.run(cmd, check=True)
         # Persist first-run weight download to the Volume
@@ -104,7 +149,7 @@ def smoke() -> None:
     """Sanity-check the Boltz deploy by predicting a 30-residue peptide.
 
     Run with:
-        modal run backend/easyfold/inference/boltz.py::smoke
+        modal run backend/easyfold/inference/boltz_app.py::smoke
 
     First run takes ~10-15 min (cold start + weight download + MSA + inference).
     Subsequent runs are ~3-5 min thanks to the cache Volume.
