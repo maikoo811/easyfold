@@ -71,7 +71,7 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
 
 - [x] **2.4 Hugging Face Spaces demo build** · Branch: `feat/hf-demo`
   - Status: Done · Completed: 2026-05-24
-  - `/demo` landing + `/demo/viewer/[id]` dynamic route for 1TUP, 1CRN, 6LU7 (swapped from 6VXX for size). Conditional `output: "export"` in `next.config.ts` driven by `BUILD_TARGET=demo`; `pnpm build:demo` produces `out/` (9 MB). `demo/deploy.sh` runs `huggingface-cli upload` via `uvx`. Live URL pending manual push (user runs `./demo/deploy.sh maikoo811/easyfold-demo` with `HF_TOKEN`).
+  - `/demo` landing + `/demo/viewer/[id]` dynamic route for 1TUP, 1CRN, 6LU7 (swapped from 6VXX for size). Conditional `output: "export"` in `next.config.ts` driven by `BUILD_TARGET=demo`; `pnpm build:demo` produces `out/` (9 MB). `demo/deploy.sh` runs `huggingface-cli upload` via `uvx`. Live URL pending manual push (user runs `./demo/deploy.sh maiko811/easyfold-demo` with `HF_TOKEN`).
   - Depends: 2.1, 2.2, 2.3
   - Acceptance: typecheck/lint/both builds green; user-confirmed visual check on the 3 examples; deploy script syntax-OK and documented.
 
@@ -115,8 +115,8 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 3.1, 3.2, 3.3
   - Acceptance: a fresh clone runs `docker compose up` and reaches the UI on `localhost:3000` with a working healthz.
 
-- [ ] **4.3 README overhaul (GIF, 5-minute Quickstart)** ← **NEXT**
-  - Status: Not started · Branch: —
+- [~] **4.3 README overhaul (GIF, 5-minute Quickstart)** ← **NEXT**
+  - Status: In progress · Started: 2026-05-25 · Branch: `docs/readme-overhaul`
   - Hero GIF/screenshot, 5-minute quickstart, link to the demo, link to the deploy button, license + model-license clarity.
   - Depends: 4.1 (formally; pulled ahead per the agreed pre-Public sweet-spot path — README is "Boltz quickstart" until 4.1 lands the deploy button, then we add it in a follow-up).
   - Acceptance: a stranger can reach a working install in 5 minutes following only the README.
