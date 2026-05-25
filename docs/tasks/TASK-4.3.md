@@ -1,9 +1,9 @@
 # TASK-4.3 — README overhaul (GIF, 5-minute Quickstart)
 
-**Status:** In progress
+**Status:** Done
 **Branch:** `docs/readme-overhaul`
 **Started:** 2026-05-25
-**Completed:** —
+**Completed:** 2026-05-25
 
 ## Context
 
@@ -34,12 +34,12 @@ A stranger landing on the GitHub repo can decide in 30 seconds whether EasyFold 
 
 ## Acceptance criteria
 
-- [ ] `README.md` renders cleanly on github.com (hero, Mermaid, table, all links).
-- [ ] `curl -sI https://huggingface.co/spaces/maiko811/easyfold-demo | head -1` returns `HTTP/2 200`.
-- [ ] `docs/screenshots/hero.png` exists and is referenced by the README.
-- [ ] License section is a table (Use case → Model → License → Wait time).
-- [ ] ROADMAP 4.3 → Done; `← **NEXT**` advances to 5.2.
-- [ ] "early skeleton — not yet usable" line is removed.
+- [x] `README.md` renders cleanly on github.com (3 stacked screenshots + Mermaid + license table + all links). User-confirmed visual check on PR #14.
+- [x] HF Spaces demo live — root URL redirects to `/demo.html` via injected `out/index.html`; 3 examples render with Mol\*.
+- [x] `docs/screenshots/{input,result,interpret}.png` exist and are referenced by the README (composite `hero.png` dropped — 3 stacked images render better on mobile + easier to maintain).
+- [x] License section is a table (Use case → Model → License → Wait time), 4 rows.
+- [x] ROADMAP 4.3 → Done; `← **NEXT**` advances to 5.2 (this PR).
+- [x] "early skeleton — not yet usable" line removed.
 
 ## Approach
 

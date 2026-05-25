@@ -103,38 +103,21 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
 
 ## Week 9-12 — Deploy experience and release
 
-- [ ] **4.1 "Deploy to Modal" button and template**
-  - Status: Not started · Branch: —
-  - One-click Modal deploy template + button on the README/landing page that takes a user from zero to running stack in their own Modal account.
-  - Depends: 3.1, 3.2, 3.3
-  - Acceptance: a new Modal account can deploy with default settings in <5 minutes; secrets prompts are clear.
+- [x] **4.3 README overhaul (GIF, 5-minute Quickstart)** · Branch: `docs/readme-overhaul`
+  - Status: Done · Completed: 2026-05-25
+  - Full rewrite of `README.md` (40 LOC → ~165 LOC): tagline + 3 stacked screenshots (input / result / interpret) showing the Build→Predict→Interpret flow + Mermaid architecture diagram + license decision table + 5-step Boltz quickstart + Acknowledgements. HF Spaces demo deploy bundled (root index.html redirects to `/demo.html` since static SDK has no backend). Demo lives at https://huggingface.co/spaces/maiko811/easyfold-demo. Captured against a real p53 Boltz prediction — Claude's interpretation answer (in `interpret.png`) names p53's intrinsically disordered N/C termini and proposes domain-level next steps, empirically validating the differentiation thesis.
+  - Depends: 4.1 (formally; pulled ahead per the agreed pre-Public sweet-spot path — 4.1's deploy button slots into the Quickstart's step 3 when it ships)
+  - Acceptance: README renders cleanly on github.com; HF demo returns 200 + visual check passes; license table covers academic / commercial / PTM / "just trying it" cases.
 
-- [ ] **4.2 Docker Compose self-hosting**
+- [ ] **5.2 Public release** ← **NEXT**
   - Status: Not started · Branch: —
-  - `docker compose up` brings up frontend + backend locally. Modal is optional; fallback path documented.
-  - Depends: 3.1, 3.2, 3.3
-  - Acceptance: a fresh clone runs `docker compose up` and reaches the UI on `localhost:3000` with a working healthz.
+  - Flip the GitHub repo from Private to Public (Settings → General → Danger Zone). Enable branch protection on `main` (require PR + CI; no force push; no deletion). Enable Discussions. Cut a `v1.0.0` git tag with release notes summarising 1.x–4.3.
+  - Depends: 4.3 (formally; the agreed pre-Public sweet-spot path pulls 5.2 ahead of 4.1 / 4.2 / 4.4 / 5.1 — those become post-Public follow-ups, since the repo is fully usable as-is via the README's Boltz quickstart)
+  - Acceptance: repo Public; `main` branch protection active; v1.0.0 tagged; README + HF demo URL both load on first visit.
 
-- [~] **4.3 README overhaul (GIF, 5-minute Quickstart)** ← **NEXT**
-  - Status: In progress · Started: 2026-05-25 · Branch: `docs/readme-overhaul`
-  - Hero GIF/screenshot, 5-minute quickstart, link to the demo, link to the deploy button, license + model-license clarity.
-  - Depends: 4.1 (formally; pulled ahead per the agreed pre-Public sweet-spot path — README is "Boltz quickstart" until 4.1 lands the deploy button, then we add it in a follow-up).
-  - Acceptance: a stranger can reach a working install in 5 minutes following only the README.
+### Post-Public follow-ups (no fixed order)
 
-- [ ] **4.4 bioRxiv Application Note draft**
-  - Status: Not started · Branch: —
-  - Short application-note manuscript (≤4 pages) describing EasyFold's purpose, differentiation, and usage. Ready for bioRxiv submission.
-  - Depends: 4.3
-  - Acceptance: draft passes a self-review against bioRxiv format; figures embed real screenshots; references the public release.
-
-- [ ] **5.1 Closed beta (20 testers)**
-  - Status: Not started · Branch: —
-  - Recruit 20 structural biologists / drug discovery researchers; collect feedback over 2 weeks; iterate on top 3 issues.
-  - Depends: 4.1, 4.3
-  - Acceptance: 20 users installed; ≥10 ran at least one prediction; feedback log committed to `docs/beta-feedback.md`.
-
-- [ ] **5.2 Public release**
-  - Status: Not started · Branch: —
-  - GitHub release tag, social announcement, demo link in the README front matter. Public bug tracker open.
-  - Depends: 5.1
-  - Acceptance: v1.0.0 tagged; release notes published; announcement posted.
+- [ ] **4.1 "Deploy to Modal" button and template** — converts the README Quickstart's step 3 from `./modal/deploy.sh boltz` to a single click. Wait for 5.2 first; cheap UX upgrade after Public.
+- [ ] **4.2 Docker Compose self-hosting** — `docker compose up` for users who can't / won't use Modal. Lower priority than 4.1; BYOC Modal is the documented primary path.
+- [ ] **4.4 bioRxiv Application Note draft** — ≤4 pp manuscript referencing the public repo + demo + figures from the README screenshots.
+- [ ] **5.1 Closed beta (20 testers)** — "ask 20 structural biologists / drug discovery folks to try the public repo, collect feedback for 2 weeks." Post-Public is more efficient than pre-Public (no need to gate access).
