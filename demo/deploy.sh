@@ -14,10 +14,10 @@
 #   ./demo/deploy.sh <hf-username>/<space-name>
 #
 # Example:
-#   HF_TOKEN=hf_... ./demo/deploy.sh maikoo811/easyfold-demo
+#   HF_TOKEN=hf_... ./demo/deploy.sh maiko811/easyfold-demo
 set -euo pipefail
 
-SPACE="${1:?Pass the HF Space ID as the first arg, e.g. maikoo811/easyfold-demo}"
+SPACE="${1:?Pass the HF Space ID as the first arg, e.g. maiko811/easyfold-demo}"
 
 if [[ -z "${HF_TOKEN:-}" ]]; then
   echo "error: HF_TOKEN must be set in the environment" >&2
