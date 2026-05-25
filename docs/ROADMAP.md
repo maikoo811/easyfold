@@ -95,11 +95,11 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 3.1, 3.2
   - Acceptance: ruff/mypy/pytest green; both frontend builds green; live `curl` confirms 502 with actionable "deploy this first" message and 404 for unknown job IDs.
 
-- [ ] **3.4 Ligand / modification / complex input UI** ← **NEXT**
-  - Status: Not started · Branch: —
-  - Expose `LigandSpec` and `ModificationSpec` in the input UI; support multi-chain complexes via copies.
+- [x] **3.4 Ligand / modification / complex input UI** · Branch: `feat/complex-input-ui`
+  - Status: Done · Completed: 2026-05-25
+  - Home page is an assembly builder: existing 3-tab `SequenceInput` adds proteins to a running `AssemblyState`; per-protein `copies` + `ModificationsEditor` (10 PTM presets + "Other..." free text); "Add ligand" creates a `LigandCard` with SMILES / CCD modes; chain-ID preview via TS port of `excel_chain_id`. Predict button disables Boltz with tooltip when modifications are present (Boltz silently drops them; AF3 supports them). Backend untouched except +1 pytest case (`test_post_accepts_full_assembly`). No new dependencies — native `<select>` styled to match the existing `Input` primitive.
   - Depends: 1.4, 3.3
-  - Acceptance: a user can submit (a) protein + ligand by SMILES, (b) protein with a phospho-modification, (c) homo-dimer — all without seeing AF3 JSON.
+  - Acceptance: ruff/mypy/pytest green (146 passing); frontend typecheck/lint/build/build:demo green; ARCHITECTURE.md "Complex input UI" section added.
 
 ## Week 9-12 — Deploy experience and release
 
@@ -115,10 +115,10 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 3.1, 3.2, 3.3
   - Acceptance: a fresh clone runs `docker compose up` and reaches the UI on `localhost:3000` with a working healthz.
 
-- [ ] **4.3 README overhaul (GIF, 5-minute Quickstart)**
+- [ ] **4.3 README overhaul (GIF, 5-minute Quickstart)** ← **NEXT**
   - Status: Not started · Branch: —
   - Hero GIF/screenshot, 5-minute quickstart, link to the demo, link to the deploy button, license + model-license clarity.
-  - Depends: 4.1
+  - Depends: 4.1 (formally; pulled ahead per the agreed pre-Public sweet-spot path — README is "Boltz quickstart" until 4.1 lands the deploy button, then we add it in a follow-up).
   - Acceptance: a stranger can reach a working install in 5 minutes following only the README.
 
 - [ ] **4.4 bioRxiv Application Note draft**

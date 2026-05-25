@@ -1,5 +1,5 @@
+import { AssemblyBuilder } from "@/components/assembly-builder";
 import { Logo } from "@/components/logo";
-import { SequenceInput } from "@/components/sequence-input";
 
 export default function Home() {
   return (
@@ -13,11 +13,13 @@ export default function Home() {
             </h1>
           </div>
           <p className="max-w-prose text-base text-muted-foreground leading-relaxed">
-            Predict protein structures with AlphaFold 3 or Boltz-2 — paste a
-            sequence, or look it up by UniProt accession or PDB ID.
+            Predict protein structures with AlphaFold 3 or Boltz-2. Add
+            proteins by UniProt accession, PDB ID, or pasted sequence; combine
+            with ligands (SMILES or CCD), modifications, and multiple chains
+            to predict a full complex.
           </p>
         </header>
-        <SequenceInput />
+        <AssemblyBuilder />
       </main>
     </div>
   );

@@ -75,6 +75,14 @@ A running log of technical decisions. New decisions append a section below; deep
 - Frontend: `SequenceResultCard` adds a `PredictCta` (two-button model picker, Boltz-2 default). Clicking POSTs and navigates to `/predict/[jobId]?model=…`, which polls every 3 seconds and renders `StructureViewer` (mmCIF text → Blob URL) + `ConfidenceCharts` + `InterpretationPanel` on completion. `/predict/[jobId]` is split into a server-shell + client subcomponent so `generateStaticParams` works for the demo build.
 - See [ADR 0004](decisions/0004-jobs-api-modal-funcall-as-id.md) for the full design rationale and open questions (output Volume migration, retention, cancellation).
 
+## Complex input UI (Task 3.4)
+
+- The home page hosts an **assembly builder**: existing 3-tab `SequenceInput` (paste / UniProt / PDB) at the top *adds* proteins to an `AssemblyState` instead of replacing the form; the assembly card below shows every entity (proteins + ligands) with computed chain IDs, copies, modifications; Predict buttons sit below.
+- State lives in `useAssemblyBuilder()` — pure `useReducer` mirroring the `useSequenceLookup` pattern. The state is converted to API JSON via `lib/assembly.ts::toJobBody(state, model)` at submit time; the converter does friendly client-side validation (no proteins / modification out of range / ligand missing SMILES+CCD) before POST.
+- **Per-model capability surfaces as button state.** Boltz-2 is disabled with an inline note when any protein has modifications (Boltz silently drops PTMs in the builder; see [ADR 0003](decisions/0003-boltz-on-modal-and-model-result.md)). AlphaFold 3 stays enabled.
+- **No new dependencies.** PTM dropdown is a native `<select>` styled to match the project's `Input`; reach for `@radix-ui/react-select` only when we need multi-select / search / custom rendering.
+- Chain ID preview uses `components/assembly-builder/chain-ids.ts` — a one-to-one TS port of `backend/easyfold/af3_input/_chain_ids.py::excel_chain_id`. Keep the two in sync if either changes.
+
 ## Hosting
 
 - **Demo: Hugging Face Spaces** (CPU free tier). Pre-computed examples only; no live prediction.

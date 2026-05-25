@@ -1,23 +1,48 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Check } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { FetchedSequence } from "@/lib/api";
 import { validatePdb, validateUniprot } from "@/lib/identifiers";
 
 import { FastaTab } from "./fasta-tab";
 import { IdLookupTab } from "./id-lookup-tab";
-import { SequenceResultCard } from "./sequence-result-card";
 import { useSequenceLookup } from "./use-sequence-lookup";
 
-export function SequenceInput() {
+interface SequenceInputProps {
+  /** Called when a sequence has been successfully fetched / pasted. */
+  onAdd: (sequence: FetchedSequence) => void;
+}
+
+const TOAST_MS = 2200;
+
+/**
+ * Three-tab sequence input (paste / UniProt / PDB).
+ *
+ * Submitting "adds" the sequence to the caller's assembly via `onAdd` and
+ * shows a brief inline confirmation; the input then resets to receive the
+ * next entity. The `SequenceResultCard` of pre-3.4 days is gone — the
+ * assembly card owns the display + the predict button.
+ */
+export function SequenceInput({ onAdd }: SequenceInputProps) {
   const { state, lookupUniprot, lookupRcsb, submitFasta, reset } =
     useSequenceLookup();
+  const [recentAdd, setRecentAdd] = useState<string | null>(null);
+  const lastHandledRef = useRef<FetchedSequence | null>(null);
 
-  if (state.status === "success") {
-    return <SequenceResultCard data={state.data} onReset={reset} />;
-  }
+  useEffect(() => {
+    if (state.status !== "success") return;
+    if (lastHandledRef.current === state.data) return;
+    lastHandledRef.current = state.data;
+    onAdd(state.data);
+    setRecentAdd(state.data.id);
+    reset();
+    const timeout = setTimeout(() => setRecentAdd(null), TOAST_MS);
+    return () => clearTimeout(timeout);
+  }, [state, onAdd, reset]);
 
   const isLoading = state.status === "loading";
 
@@ -39,7 +64,7 @@ export function SequenceInput() {
             label="UniProt accession"
             placeholder="P04637"
             exampleId="P04637"
-            submitLabel="Fetch"
+            submitLabel="Add"
             validate={validateUniprot}
             isLoading={isLoading}
             onSubmit={lookupUniprot}
@@ -51,7 +76,7 @@ export function SequenceInput() {
             label="PDB ID"
             placeholder="1TUP"
             exampleId="1TUP"
-            submitLabel="Fetch"
+            submitLabel="Add"
             validate={validatePdb}
             isLoading={isLoading}
             onSubmit={lookupRcsb}
@@ -71,6 +96,15 @@ export function SequenceInput() {
         <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <span>{state.message}</span>
+        </div>
+      )}
+
+      {recentAdd && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-sm text-primary">
+          <Check className="size-4 shrink-0" />
+          <span>
+            Added <span className="font-mono">{recentAdd}</span> to assembly
+          </span>
         </div>
       )}
     </div>

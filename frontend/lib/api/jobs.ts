@@ -38,12 +38,21 @@ export interface JobStatus {
   error: string | null;
 }
 
+export interface JobCreateBodyModification {
+  ptm_type: string;
+  ptm_position: number;
+}
+
 /** POST /api/v1/jobs request body. Matches `easyfold.api.models.JobCreateRequest`. */
 export interface JobCreateBody {
   model: ModelName;
   job: {
     name: string;
-    proteins: { sequence: string; copies?: number }[];
+    proteins: {
+      sequence: string;
+      copies?: number;
+      modifications?: JobCreateBodyModification[];
+    }[];
     ligands?: { smiles?: string; ccd_codes?: string[]; copies?: number }[];
     model_seeds?: number[];
   };

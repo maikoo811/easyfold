@@ -142,6 +142,44 @@ async def test_post_returns_422_for_invalid_sequence() -> None:
     assert resp.status_code == 422
 
 
+async def test_post_accepts_full_assembly(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Task 3.4 surface: POST accepts a job with copies + modifications + ligand."""
+    captured: dict[str, Any] = {}
+
+    async def fake_spawn(model: str, job: dict[str, Any]) -> str:
+        captured["job"] = job
+        return "fc-assembly"
+
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", fake_spawn)
+
+    body = {
+        "model": "alphafold3",
+        "job": {
+            "name": "p53_complex",
+            "proteins": [
+                {
+                    "sequence": "MEEPGGGG",
+                    "copies": 2,
+                    "modifications": [{"ptm_type": "PHOSPHO", "ptm_position": 4}],
+                }
+            ],
+            "ligands": [{"smiles": "CCO", "copies": 1}],
+        },
+    }
+
+    async with _client() as c:
+        resp = await c.post("/api/v1/jobs", json=body)
+
+    assert resp.status_code == 200
+    assert resp.json()["job_id"] == "fc-assembly"
+    # Dispatch sees the full PredictionJob shape: copies preserved,
+    # modifications round-tripped through Pydantic, ligand included.
+    job = captured["job"]
+    assert job["proteins"][0]["copies"] == 2
+    assert job["proteins"][0]["modifications"] == [{"ptm_type": "PHOSPHO", "ptm_position": 4}]
+    assert job["ligands"][0]["smiles"] == "CCO"
+
+
 # ── GET /api/v1/jobs/{id} ────────────────────────────────────────────
 
 
