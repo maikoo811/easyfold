@@ -11,7 +11,7 @@ EasyFold is an open-source web UI that makes AlphaFold 3 and Boltz-2 protein str
 
 Target users: structural biologists, biochemists, drug discovery researchers, globally, English UI.
 
-Full project brief is at `docs/PROJECT_BRIEF.md`. Always read it before making architectural decisions.
+The product framing and differentiation rationale live in this file (sections **What this project is**, **Differentiation reminders**, **Things that are out of scope for MVP**). There is no separate `PROJECT_BRIEF.md` — the brief is here.
 
 ## Tech stack (decided — don't suggest alternatives without asking)
 
@@ -29,15 +29,18 @@ Full project brief is at `docs/PROJECT_BRIEF.md`. Always read it before making a
 
 ```
 easyfold/
-├── CLAUDE.md                    # this file
+├── CLAUDE.md                    # this file — agent contract + project brief
 ├── README.md                    # public-facing, demo-first
 ├── docs/
-│   ├── PROJECT_BRIEF.md         # full project brief
+│   ├── ROADMAP.md               # authoritative task list (drives session progression)
 │   ├── ARCHITECTURE.md          # technical decisions log
-│   └── decisions/               # ADRs (architecture decision records)
+│   ├── TASK_TEMPLATE.md         # starter for new per-task docs
+│   ├── decisions/               # ADRs (architecture decision records)
+│   ├── tasks/                   # per-task long-form notes (TASK-X.Y.md)
+│   └── screenshots/             # README hero + supporting PNGs
 ├── frontend/                    # Next.js app
 ├── backend/                     # FastAPI app
-├── modal/                       # Modal deployment scripts
+├── modal/                       # Modal deployment scripts + provisioning guide
 ├── demo/                        # Hugging Face Spaces demo
 ├── scripts/                     # dev utilities
 └── tests/
@@ -55,7 +58,7 @@ easyfold/
 ## Workflow rules — IMPORTANT
 
 1. **Always use plan mode for tasks with 3+ steps.** Show me the plan before implementing.
-2. **Read `docs/PROJECT_BRIEF.md` before architectural decisions.** Don't invent business logic.
+2. **Re-read this file's product framing before architectural decisions** (sections "What this project is" + "Differentiation reminders"). Don't invent business logic.
 3. **One concern per PR/commit.** No mixing of feature + refactor + dependency bump.
 4. **Ask before adding new dependencies.** Especially for the frontend — bundle size matters.
 5. **Never push to `main` directly.** Always use a feature branch.
@@ -122,7 +125,7 @@ When designing UI, always check:
 
 1. Read this file (you are, good).
 2. Read `docs/ROADMAP.md` to identify the next task — see **Autonomous task workflow** above.
-3. Check `docs/PROJECT_BRIEF.md` if the task touches architecture or product.
+3. Re-read the **What this project is** and **Differentiation reminders** sections above if the task touches architecture or product.
 4. Look at recent commits with `git log --oneline -20` to understand where we left off.
 5. If the task is ambiguous or scope > 3 steps, propose a plan first.
 
