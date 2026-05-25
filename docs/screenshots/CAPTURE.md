@@ -1,66 +1,78 @@
 # Screenshot capture guide
 
-All public-facing screenshots live in this directory. The README references them by path:
+All public-facing screenshots live in this directory. The README's top-of-page
+"Build → Predict → Interpret" tour stacks three screenshots vertically, each
+focused on one stage of the flow.
 
-- `hero.png` — top-of-README composite, shown on github.com and on social previews.
-- `input.png` — the assembly builder mid-build.
-- `result.png` — a successful prediction's result page (Mol* + charts + interpret).
-- (optional) `input-with-ligand.png` — close-up of the "Add ligand" panel.
+| File | What it shows | Target size |
+|---|---|---|
+| `input.png` | Assembly builder mid-build | ~1280×900 |
+| `result.png` | Mol\* viewer + pLDDT chart + PAE heatmap | ~1280×900 |
+| `interpret.png` | Claude's natural-language interpretation with API key + question + answer + actions | ~1280×900 |
 
 If you change the README's image references, update this file to match.
 
 ---
 
-## hero.png — composite, target ~1600×900 (16:9)
+## input.png
 
-Three side-by-side panels combined into a single PNG (macOS Preview's "tile" works, or any image editor). From left to right:
+The home page (`http://localhost:3000`) with the assembly builder fully built:
 
-1. **Input**: the home page with an assembly built — at least 1 protein (e.g. P04637 / p53), 1 modification (PHOSPHO at residue 15), 1 ligand (CCD `HEM` or SMILES `CCO`), `copies=1` is fine. Show the Predict buttons at the bottom. This is "what the user does."
-2. **Result**: a `/predict/[jobId]` page showing the Mol\* viewer with a real cartoon structure rendered (p53 works — it's the structure that's been validated end-to-end). The pLDDT chart should be visible below the viewer. This is "what they get back."
-3. **Interpret**: the InterpretationPanel with a Claude response visible. The example question "Where are the disordered regions?" with the answer that identifies the N-terminal transactivation domain + C-terminal regulatory domain is a great fit — it shows the *biological reasoning*, which is the whole differentiation. This is "what makes EasyFold different."
+- 1 protein (UniProt lookup of **P04637** is the canonical example)
+- `copies = 2` on the protein (so chain labels show "Chains A, B")
+- 1 modification: **PHOSPHO** at residue 15 (so the Boltz-disabled tooltip is visible)
+- 1 ligand: SMILES **`CCO`** (or CCD **`HEM`**)
 
-The hero is the most important visual; spend an extra few minutes getting the framing right.
-
----
-
-## input.png — target ~1280×900
-
-The home page (`http://localhost:3000`) with the assembly builder mid-build:
-
-- 1 protein (P04637 looked up via UniProt)
-- 1 modification (PHOSPHO at residue 15) — so the Boltz-disabled tooltip is visible
-- 1 ligand (SMILES `CCO`, or CCD `HEM`)
-- `copies` = 2 on the protein (so chain labels show "Chains A, B")
-
-This screenshot is the cleanest single-frame demonstration that the assembly builder handles the full PredictionJob shape.
+This single frame demonstrates every assembly-builder feature: multi-chain,
+post-translational modifications, ligands, per-model capability surface
+(the disabled-Boltz tooltip), and the chain-ID preview.
 
 ---
 
-## result.png — target ~1280×900
+## result.png
 
-A successful prediction's `/predict/[jobId]` page:
+A successful prediction's `/predict/[jobId]` page. The cleanest version of
+this screenshot includes (top → bottom in one frame):
 
-- Mol\* viewer rendering a real cartoon (p53 again, or whatever your last successful run was).
-- The pLDDT chart visible below — values should be in 0-100 range (post the Task 3.3 validation polish).
-- (Optional) Scroll down a bit to also include the InterpretationPanel input field at the bottom.
+- Header strip with the protein name + `pTM` / `ipTM` badges.
+- Mol\* viewer with the cartoon structure rendered. For P04637 the
+  DNA-binding domain (~residues 100–300) shows up as the high-confidence
+  blue region in the middle, with disordered N-/C-termini in orange.
+- Per-residue pLDDT chart (0–100 axis, peaks in the DBD region).
+- PAE heatmap (lower is darker = better; the structured-region square
+  in the middle is visually obvious).
 
-Frame the screenshot so the structure is clearly visible (not at the absolute top of the panel) and the chart is legible.
+The smaller-zoom version (everything fits in one viewport) makes a better
+README hero than a tightly-cropped Mol\*-only frame.
 
 ---
 
-## input-with-ligand.png — optional, target ~800×600
+## interpret.png
 
-A close-up of just the "Add ligand" inline panel, mid-fill (SMILES tab selected, `CCO` typed into the input). Useful only if the README ever grows a dedicated "ligand support" section.
+The Interpret panel with a Claude response visible. Recommended setup:
+
+1. Enter your Anthropic API key (BYOK — never sent to our backend).
+2. Question: anything that gets a biologically-grounded answer. Good
+   choices for P04637:
+   - `What does pTM 0.53 mean here?`
+   - `Where are the disordered regions?`
+   - `Is the structured core trustworthy enough for docking?`
+3. Click **Interpret**. Wait a few seconds for the answer.
+4. Frame the screenshot so the question, the answer paragraph, **and** the
+   "Next steps" actionable suggestions are all in one frame. The full
+   panel is what sells the differentiation.
 
 ---
 
 ## Capture tips
 
-- **Browser zoom 100%, system display at standard scale.** Hi-DPI displays produce 2x images; that's fine — GitHub downsamples nicely.
+- **Browser zoom 100%, system display at standard scale.** Hi-DPI displays
+  produce 2× images; that's fine — GitHub downsamples nicely.
 - **Hide bookmarks bar.** It's noise.
-- **Scroll position at the top of each panel** unless the content you want is below.
-- **macOS**: `⌘ Shift 4`, then drag for an area screenshot. Output PNG.
-- **No JPG**, ever — text in PNGs stays crisp.
-- **Crop the URL bar** if it shows `localhost:3000` and that's distracting (though `localhost` is fine and signals "this is your own machine").
-
-Once captured, drop the PNGs into this directory and remove this paragraph from `hero.png`'s expected size if you go with a different aspect ratio.
+- **Scroll position at the top of the content area** unless what you want
+  is below.
+- **macOS**: ⌘⇧4, then drag for an area screenshot. PNG only — text in
+  JPGs gets fuzzy.
+- **The localhost URL bar is fine to include** — it signals "this is your
+  own machine, not our service" which matches the BYOC pitch. Crop only
+  if it's visually distracting.

@@ -6,7 +6,17 @@
 [![Live demo on Hugging Face Spaces](https://img.shields.io/badge/demo-Hugging%20Face%20Spaces-yellow.svg)](https://huggingface.co/spaces/maiko811/easyfold-demo)
 [![Models: AlphaFold 3 + Boltz-2](https://img.shields.io/badge/models-AlphaFold%203%20%2B%20Boltz--2-teal.svg)](#pick-a-model)
 
-![EasyFold — input form, prediction result, and natural-language interpretation panel](docs/screenshots/hero.png)
+![Step 1 — build your assembly: protein + copies + modifications + ligand, with chain ID preview](docs/screenshots/input.png)
+
+> **Build** — point and click your way to a multi-chain assembly with ligands and post-translational modifications. No JSON.
+
+![Step 2 — get a 3D structure, per-residue pLDDT, and PAE heatmap](docs/screenshots/result.png)
+
+> **Predict** — your sequence runs on your own Modal GPU. ~30 seconds to a few minutes. mmCIF + confidence charts render in the browser.
+
+![Step 3 — ask Claude what the numbers mean for your scientific question](docs/screenshots/interpret.png)
+
+> **Interpret** — bring your own [Anthropic API key](https://console.anthropic.com/), ask a question about the structure, and Claude grounds the answer in the actual pLDDT / PAE / ipTM your prediction produced.
 
 ---
 
