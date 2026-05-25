@@ -14,7 +14,7 @@ import {
   newProteinDraft,
 } from "@/lib/assembly";
 
-type Action =
+export type Action =
   | { type: "ADD_PROTEIN"; protein: FetchedSequence }
   | { type: "REMOVE_PROTEIN"; id: string }
   | { type: "SET_PROTEIN_COPIES"; id: string; copies: number }
@@ -35,7 +35,7 @@ type Action =
   | { type: "SET_JOB_NAME"; name: string }
   | { type: "RESET" };
 
-function reducer(state: AssemblyState, action: Action): AssemblyState {
+export function reducer(state: AssemblyState, action: Action): AssemblyState {
   switch (action.type) {
     case "ADD_PROTEIN":
       return { ...state, proteins: [...state.proteins, newProteinDraft(action.protein)] };

@@ -111,3 +111,39 @@ def test_rejects_chain_id_with_lowercase() -> None:
     payload["sequences"] = [{"protein": {"id": "a", "sequence": "MEEP"}}]
     with pytest.raises(InvalidBoltzInput, match=r"\^\[A-Z\]\+"):
         validate_boltz_input(payload)
+
+
+# ── edge cases (Task 4.5) ─────────────────────────────────────────────
+
+
+def test_rejects_protein_sequence_with_unicode_letters() -> None:
+    """Non-ASCII letters must be rejected (same alphabet as AF3)."""
+    payload = _ok_payload()
+    payload["sequences"] = [{"protein": {"id": "A", "sequence": "MEEPα"}}]
+    with pytest.raises(InvalidBoltzInput, match="non-standard"):
+        validate_boltz_input(payload)
+
+
+def test_accepts_multi_letter_chain_id() -> None:
+    """The Excel-style multi-letter chain IDs (``AA``, ``AB``, …) the builder
+    emits past chain Z must be accepted by the validator.
+    """
+    payload = _ok_payload()
+    payload["sequences"] = [
+        {"protein": {"id": "AA", "sequence": "MEEP"}},
+        {"protein": {"id": "AB", "sequence": "GGGG"}},
+    ]
+    validate_boltz_input(payload)
+
+
+def test_rejects_first_invalid_entry_when_some_are_valid() -> None:
+    """If one entry in ``sequences`` is broken, the validator fails on it
+    even if later entries would be fine. (Fail-fast contract.)
+    """
+    payload = _ok_payload()
+    payload["sequences"] = [
+        {"protein": {"id": "a", "sequence": "MEEP"}},  # lowercase id → fail
+        {"protein": {"id": "B", "sequence": "GGGG"}},  # would be fine alone
+    ]
+    with pytest.raises(InvalidBoltzInput, match=r"\^\[A-Z\]\+"):
+        validate_boltz_input(payload)

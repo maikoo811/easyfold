@@ -286,3 +286,77 @@ async def test_poll_falls_through_when_call_graph_errors(
     status, result, _error = await poll_prediction("fc-flaky")
     assert status == "succeeded"
     assert result == {"model": "boltz2", "name": "ok"}
+
+
+# ── edge cases (Task 4.5) ─────────────────────────────────────────────
+
+
+async def test_poll_uses_only_first_input_info_when_multiple_present(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Single-input calls (our case) have exactly one ``InputInfo``; if the
+    SDK returns multiple, we read ``[0]`` and ignore the rest. Documenting
+    the current behavior in case Modal ever introduces fan-out semantics
+    we'd need to revisit.
+    """
+    fake_call = MagicMock()
+    fake_call.get_call_graph.aio = AsyncMock(
+        return_value=[
+            _input_info_with_status(dispatch.modal.call_graph.InputStatus.INIT_FAILURE),
+            _input_info_with_status(dispatch.modal.call_graph.InputStatus.SUCCESS),
+        ]
+    )
+    fake_call.get.aio = AsyncMock(side_effect=AssertionError("should not reach get()"))
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, _result, error = await poll_prediction("fc-multi")
+    assert status == "failed"
+    assert error is not None and "INIT_FAILURE" in error
+
+
+async def test_poll_falls_through_on_pending_status(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``PENDING`` is not a terminal-failure state; fall through to ``get()``."""
+    fake_call = MagicMock()
+    fake_call.get_call_graph.aio = AsyncMock(
+        return_value=[_input_info_with_status(dispatch.modal.call_graph.InputStatus.PENDING)]
+    )
+    fake_call.get.aio = AsyncMock(side_effect=TimeoutError("not ready"))
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, _result, _error = await poll_prediction("fc-pending")
+    assert status == "running"
+
+
+async def test_spawn_with_long_job_dict_does_not_crash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Defensive — a 5000-aa sequence wrapped in the job dict goes through
+    unchanged. No size cap in dispatch; the upstream Pydantic models +
+    Modal SDK handle it."""
+    fake_call = MagicMock(object_id="fc-big")
+    fake_func = MagicMock()
+    fake_func.spawn.aio = AsyncMock(return_value=fake_call)
+    monkeypatch.setattr(dispatch.modal.Function, "from_name", lambda *_a, **_kw: fake_func)
+
+    big_seq = "M" + ("A" * 4999)
+    job = {"name": "huge", "proteins": [{"sequence": big_seq}]}
+    result = await spawn_prediction("boltz2", job)
+
+    assert result == "fc-big"
+    sent_job = fake_func.spawn.aio.await_args.args[0]
+    assert len(sent_job["proteins"][0]["sequence"]) == 5000
+
+
+async def test_poll_handles_long_job_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 256-char id is malformed for Modal but the dispatch wrapper must
+    surface it as ``JobNotFound`` (→ 404), not crash with a different error.
+    """
+
+    def boom(_id: str) -> Any:
+        raise modal.exception.NotFoundError("no such call")
+
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", boom)
+
+    long_id = "fc-" + ("x" * 253)
+    with pytest.raises(JobNotFound):
+        await poll_prediction(long_id)

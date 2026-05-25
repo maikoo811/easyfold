@@ -30,6 +30,8 @@ jobs:
 
       - run: pnpm typecheck
 
+      - run: pnpm test
+
   backend:
     runs-on: ubuntu-latest
     defaults:

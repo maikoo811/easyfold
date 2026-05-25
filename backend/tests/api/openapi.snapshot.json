@@ -1,0 +1,642 @@
+{
+  "components": {
+    "schemas": {
+      "FetchedSequence": {
+        "description": "A protein sequence with light metadata, normalized across data sources.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-readable protein name or structure title, if available.",
+            "title": "Description"
+          },
+          "id": {
+            "description": "UniProt accession or PDB ID, uppercase.",
+            "title": "Id",
+            "type": "string"
+          },
+          "length": {
+            "minimum": 1.0,
+            "title": "Length",
+            "type": "integer"
+          },
+          "organism": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Scientific name of the source organism, if available.",
+            "title": "Organism"
+          },
+          "sequence": {
+            "description": "Single-letter amino-acid sequence.",
+            "title": "Sequence",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "uniprot",
+              "rcsb"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "sequence",
+          "length"
+        ],
+        "title": "FetchedSequence",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "JobCreateRequest": {
+        "description": "POST /api/v1/jobs request body.",
+        "properties": {
+          "job": {
+            "$ref": "#/components/schemas/PredictionJob"
+          },
+          "model": {
+            "enum": [
+              "alphafold3",
+              "boltz2"
+            ],
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "job"
+        ],
+        "title": "JobCreateRequest",
+        "type": "object"
+      },
+      "JobStatusResponse": {
+        "description": "Shared response shape for POST /api/v1/jobs and GET /api/v1/jobs/{id}.\n\n``model`` is echoed back from the original POST. The GET endpoint\ncan't recover it from Modal's ``FunctionCall`` (the SDK doesn't\nexpose the originating App through the call object), so the GET\nresponse includes ``model: None`` \u2014 callers keep the model they\nPOSTed with via URL state on the ``/predict/[jobId]`` page.",
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "enum": [
+                  "alphafold3",
+                  "boltz2"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelResultModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "model",
+          "status"
+        ],
+        "title": "JobStatusResponse",
+        "type": "object"
+      },
+      "LigandSpec": {
+        "description": "A small molecule, by SMILES or PDB Chemical Component Dictionary codes.",
+        "properties": {
+          "ccd_codes": {
+            "description": "PDB CCD codes (e.g. ['HEM', 'NAG']).",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ccd Codes",
+            "type": "array"
+          },
+          "copies": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Copies",
+            "type": "integer"
+          },
+          "smiles": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "SMILES string for the ligand.",
+            "title": "Smiles"
+          }
+        },
+        "title": "LigandSpec",
+        "type": "object"
+      },
+      "ModelResultModel": {
+        "description": "Pydantic mirror of :class:`easyfold.inference.result.ModelResult`.",
+        "properties": {
+          "cif": {
+            "title": "Cif",
+            "type": "string"
+          },
+          "extras": {
+            "additionalProperties": true,
+            "title": "Extras",
+            "type": "object"
+          },
+          "iptm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iptm"
+          },
+          "model": {
+            "enum": [
+              "alphafold3",
+              "boltz2"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pae": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pae"
+          },
+          "plddt": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Plddt",
+            "type": "array"
+          },
+          "ptm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ptm"
+          },
+          "ranking_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ranking Score"
+          },
+          "sample_dir_name": {
+            "title": "Sample Dir Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "name",
+          "cif",
+          "plddt",
+          "pae",
+          "iptm",
+          "ptm",
+          "ranking_score",
+          "sample_dir_name"
+        ],
+        "title": "ModelResultModel",
+        "type": "object"
+      },
+      "ModificationSpec": {
+        "description": "A post-translational modification at a 1-indexed residue position.",
+        "properties": {
+          "ptm_position": {
+            "description": "1-indexed residue position within the chain.",
+            "minimum": 1.0,
+            "title": "Ptm Position",
+            "type": "integer"
+          },
+          "ptm_type": {
+            "description": "AF3 PTM code, e.g. PHOSPHO.",
+            "minLength": 1,
+            "title": "Ptm Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ptm_type",
+          "ptm_position"
+        ],
+        "title": "ModificationSpec",
+        "type": "object"
+      },
+      "PredictionJob": {
+        "description": "A complete prediction request in EasyFold's internal vocabulary.",
+        "properties": {
+          "ligands": {
+            "items": {
+              "$ref": "#/components/schemas/LigandSpec"
+            },
+            "title": "Ligands",
+            "type": "array"
+          },
+          "model_seeds": {
+            "description": "Per-seed predictions enable ensemble outputs.",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1,
+            "title": "Model Seeds",
+            "type": "array"
+          },
+          "name": {
+            "description": "Human-readable job identifier.",
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "proteins": {
+            "description": "One or more protein entities to predict.",
+            "items": {
+              "$ref": "#/components/schemas/ProteinSpec"
+            },
+            "minItems": 1,
+            "title": "Proteins",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "proteins"
+        ],
+        "title": "PredictionJob",
+        "type": "object"
+      },
+      "ProteinSpec": {
+        "description": "A single protein entity. ``copies`` > 1 emits a homo-multimer in the AF3 JSON.",
+        "properties": {
+          "copies": {
+            "default": 1,
+            "description": "Number of identical chains AF3 should generate.",
+            "minimum": 1.0,
+            "title": "Copies",
+            "type": "integer"
+          },
+          "modifications": {
+            "items": {
+              "$ref": "#/components/schemas/ModificationSpec"
+            },
+            "title": "Modifications",
+            "type": "array"
+          },
+          "sequence": {
+            "description": "One-letter amino acid sequence; whitespace stripped, uppercased.",
+            "title": "Sequence",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sequence"
+        ],
+        "title": "ProteinSpec",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "EasyFold API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/healthz": {
+      "get": {
+        "operationId": "healthz_api_v1_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthz",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/jobs": {
+      "post": {
+        "description": "Spawn a Modal prediction job and return the Modal FunctionCall id.\n\nThe response always carries ``status=\"pending\"`` \u2014 we don't poll\nModal here. The frontend's first GET will flip it to ``\"running\"``.",
+        "operationId": "create_job_api_v1_jobs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "description": "Return current status (and result/error if terminal) for a job.",
+        "operationId": "get_job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/sequences/rcsb/{pdb_id}": {
+      "get": {
+        "operationId": "get_rcsb_sequence_api_v1_sequences_rcsb__pdb_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pdb_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9]{4}$",
+              "title": "Pdb Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchedSequence"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rcsb Sequence",
+        "tags": [
+          "sequences"
+        ]
+      }
+    },
+    "/api/v1/sequences/uniprot/{accession}": {
+      "get": {
+        "operationId": "get_uniprot_sequence_api_v1_sequences_uniprot__accession__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accession",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_]+$",
+              "title": "Accession",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchedSequence"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Uniprot Sequence",
+        "tags": [
+          "sequences"
+        ]
+      }
+    }
+  }
+}

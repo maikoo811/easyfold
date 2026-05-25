@@ -109,6 +109,12 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 4.1 (formally; pulled ahead per the agreed pre-Public sweet-spot path — 4.1's deploy button slots into the Quickstart's step 3 when it ships)
   - Acceptance: README renders cleanly on github.com; HF demo returns 200 + visual check passes; license table covers academic / commercial / PTM / "just trying it" cases.
 
+- [~] **4.5 Test coverage hardening (Tier 1 + Tier 2)** · Branch: `chore/test-coverage-hardening`
+  - Status: In progress · Started: 2026-05-25
+  - Frontend Vitest setup + ~25–30 pure-function tests for `lib/assembly.ts`, `use-assembly-builder` reducer, `chain-ids.ts`. Backend ~25–30 new edge-case tests across parsers / routes / validators, 5 `hypothesis` property tests, and an OpenAPI schema snapshot test with regen script. Wires `pnpm test` into CI's frontend job.
+  - Depends: 4.3
+  - Acceptance: frontend `pnpm test` green with ≥25 tests; backend `uv run pytest` green with ≥185 tests; mypy/ruff still clean; OpenAPI snapshot test passes + regen script idempotent; CI green on both jobs.
+
 - [ ] **5.2 Public release** ← **NEXT**
   - Status: Not started · Branch: —
   - Flip the GitHub repo from Private to Public (Settings → General → Danger Zone). Enable branch protection on `main` (require PR + CI; no force push; no deletion). Enable Discussions. Cut a `v1.0.0` git tag with release notes summarising 1.x–4.3.

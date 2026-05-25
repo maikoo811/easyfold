@@ -88,3 +88,48 @@ def test_ligand_without_smiles_or_ccd_raises() -> None:
     data["sequences"] = [{"ligand": {"id": "A"}}]
     with pytest.raises(InvalidAf3Input, match=r"smiles.*ccdCodes"):
         validate_af3_input(data)
+
+
+# ── edge cases (Task 4.5) ─────────────────────────────────────────────
+
+
+def test_protein_sequence_with_unicode_letters_raises() -> None:
+    """Non-ASCII letters (e.g. Greek alpha) are not in the standard AA set."""
+    data = _valid()
+    data["sequences"] = [{"protein": {"id": "A", "sequence": "MEEPα"}}]
+    with pytest.raises(InvalidAf3Input, match="non-standard"):
+        validate_af3_input(data)
+
+
+def test_protein_sequence_with_null_byte_raises() -> None:
+    """Embedded NUL bytes are not standard AAs — must be rejected at validation."""
+    data = _valid()
+    data["sequences"] = [{"protein": {"id": "A", "sequence": "MEEP\x00G"}}]
+    with pytest.raises(InvalidAf3Input, match="non-standard"):
+        validate_af3_input(data)
+
+
+def test_protein_sequence_with_10000_aas_is_accepted() -> None:
+    """No size cap by design — verify a 10k-aa sequence survives validation.
+    If we later cap (e.g. for GPU memory), this test breaks loudly.
+    """
+    data = _valid()
+    data["sequences"] = [{"protein": {"id": "A", "sequence": "A" * 10000}}]
+    validate_af3_input(data)
+
+
+def test_chain_id_with_leading_whitespace_raises() -> None:
+    """The chain-ID regex is ``^[A-Z]+$`` (anchored) — leading/trailing
+    whitespace is rejected.
+    """
+    data = _valid()
+    data["sequences"] = [{"protein": {"id": " A", "sequence": "MEEP"}}]
+    with pytest.raises(InvalidAf3Input, match="chain id"):
+        validate_af3_input(data)
+
+
+def test_chain_id_with_trailing_whitespace_raises() -> None:
+    data = _valid()
+    data["sequences"] = [{"protein": {"id": "A ", "sequence": "MEEP"}}]
+    with pytest.raises(InvalidAf3Input, match="chain id"):
+        validate_af3_input(data)
