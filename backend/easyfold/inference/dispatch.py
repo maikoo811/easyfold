@@ -26,6 +26,7 @@ Design constraints (see ADR 0004):
 from typing import Any
 
 import modal
+import modal.call_graph
 import modal.exception
 from modal import Function
 
@@ -113,6 +114,17 @@ async def poll_prediction(
             raise JobNotFound(f"unknown job {job_id}") from exc
         raise ModalDispatchError(f"failed to poll {job_id}: {exc}") from exc
 
+    # Inspect the call graph BEFORE polling the result. ``get(timeout=0)``
+    # raises ``TimeoutError`` while Modal is still retrying a crash-looping
+    # container, so without this check the route reports ``"running"``
+    # forever (until the Function's 30-minute timeout fires). The call
+    # graph surfaces ``INIT_FAILURE`` / ``TERMINATED`` directly so we can
+    # flip the job to ``"failed"`` immediately. See the post-3.3 validation
+    # report for the user-visible symptom this addresses.
+    terminal_failure = await _check_terminal_failure(call, job_id)
+    if terminal_failure is not None:
+        return ("failed", None, terminal_failure)
+
     try:
         result = await call.get.aio(timeout=0)
     except TimeoutError:
@@ -130,6 +142,47 @@ async def poll_prediction(
         raise ModalDispatchError(f"job {job_id} returned {type(result).__name__}, expected dict")
     typed_result: dict[str, Any] = result
     return ("succeeded", typed_result, None)
+
+
+async def _check_terminal_failure(call: "modal.FunctionCall[Any]", job_id: str) -> str | None:
+    """Return an error string if the call is in a terminal-failure state, else None.
+
+    Detects ``INIT_FAILURE`` (container couldn't start — e.g. missing image
+    deps, ``ModuleNotFoundError`` at boot) and ``TERMINATED`` (call was
+    cancelled). Both are non-recoverable; the route should flip the job to
+    ``"failed"`` instead of polling forever.
+
+    Empty / unavailable call graphs (e.g. transient Modal API hiccup, or
+    the call hasn't been scheduled yet) are treated as "no signal" and the
+    caller falls through to ``get(timeout=0)``. We err on the side of
+    "keep polling" so a flaky call-graph call doesn't cause spurious
+    ``failed`` reports.
+    """
+    try:
+        graph = await call.get_call_graph.aio()
+    except modal.exception.Error:
+        # Don't surface call-graph failures to the user; just skip the check
+        # and let ``get(timeout=0)`` do its job.
+        return None
+
+    if not graph:
+        return None
+
+    # Single-input calls (our case — POST /jobs always spawns one) have one
+    # InputInfo in the top-level list. Look at its status.
+    top = graph[0]
+    status = top.status
+    if status == modal.call_graph.InputStatus.INIT_FAILURE:
+        return (
+            f"job {job_id} failed: container could not start (Modal INIT_FAILURE). "
+            "Check `uv run modal app logs <app-name>` for the underlying error — "
+            "common causes are missing image dependencies or a startup-time import error."
+        )
+    if status == modal.call_graph.InputStatus.TERMINATED:
+        return f"job {job_id} was terminated before completion."
+    if status == modal.call_graph.InputStatus.TIMEOUT:
+        return f"job {job_id} exceeded the Modal Function's configured timeout."
+    return None
 
 
 def _lookup_function(model: ModelName) -> "Function[Any, Any, Any]":
