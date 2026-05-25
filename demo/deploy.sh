@@ -41,6 +41,27 @@ fi
 echo "==> Copying HF Spaces README into the export root"
 cp "$REPO_ROOT/demo/README.md" out/README.md
 
+# Replace the root index.html (the live AssemblyBuilder) with a tiny redirect
+# to /demo. The static HF Spaces deploy has no backend, so the AssemblyBuilder
+# hits "Network error" on its first call to /api/v1/sequences. The pre-computed
+# demo lives at /demo and works without a backend; redirecting root → /demo
+# makes the HF Space "just work" for first-time visitors.
+echo "==> Replacing root index.html with redirect to /demo"
+cat > out/index.html <<'HTML'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0; url=demo.html">
+  <title>EasyFold demo</title>
+  <link rel="canonical" href="demo.html">
+</head>
+<body>
+  <p>Redirecting to <a href="demo.html">the EasyFold demo</a>…</p>
+</body>
+</html>
+HTML
+
 echo "==> Uploading out/ to Space $SPACE"
 # Note: the old `huggingface-cli` CLI was deprecated in favor of `hf` (huggingface_hub >=0.34).
 # Same args, different binary name. Invoked via uvx so contributors don't need a global install.
