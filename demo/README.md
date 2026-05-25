@@ -7,7 +7,7 @@ sdk: static
 app_file: index.html
 pinned: false
 license: cc-by-nc-sa-4.0
-short_description: Pre-computed AlphaFold-style result viewer for three structures.
+short_description: Pre-computed AlphaFold viewer for 3 example structures.
 ---
 
 # EasyFold demo

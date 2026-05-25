@@ -42,7 +42,9 @@ echo "==> Copying HF Spaces README into the export root"
 cp "$REPO_ROOT/demo/README.md" out/README.md
 
 echo "==> Uploading out/ to Space $SPACE"
-uvx --from huggingface_hub huggingface-cli upload "$SPACE" out/ . \
+# Note: the old `huggingface-cli` CLI was deprecated in favor of `hf` (huggingface_hub >=0.34).
+# Same args, different binary name. Invoked via uvx so contributors don't need a global install.
+uvx --from huggingface_hub hf upload "$SPACE" out/ . \
   --repo-type=space \
   --commit-message="Deploy EasyFold demo $(git rev-parse --short HEAD)"
 
