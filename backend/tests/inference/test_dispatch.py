@@ -90,8 +90,19 @@ async def test_spawn_translates_message_based_not_found_from_spawn(
 # ── poll_prediction ──────────────────────────────────────────────────
 
 
+def _empty_graph_call() -> MagicMock:
+    """Return a fake FunctionCall whose ``get_call_graph().aio()`` resolves to
+    an empty list — i.e. "no terminal-failure signal, fall through to get()".
+    Tests that exercise the init-failure detection branch override
+    ``get_call_graph.aio`` themselves.
+    """
+    fake = MagicMock()
+    fake.get_call_graph.aio = AsyncMock(return_value=[])
+    return fake
+
+
 async def test_poll_returns_running_when_get_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake_call = MagicMock()
+    fake_call = _empty_graph_call()
     fake_call.get.aio = AsyncMock(side_effect=TimeoutError("not ready"))
     monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
 
@@ -103,7 +114,7 @@ async def test_poll_returns_running_when_get_times_out(monkeypatch: pytest.Monke
 
 async def test_poll_returns_succeeded_with_result_dict(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = {"model": "boltz2", "name": "smoke", "cif": "data_x\n"}
-    fake_call = MagicMock()
+    fake_call = _empty_graph_call()
     fake_call.get.aio = AsyncMock(return_value=payload)
     monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
 
@@ -116,7 +127,7 @@ async def test_poll_returns_succeeded_with_result_dict(monkeypatch: pytest.Monke
 async def test_poll_returns_failed_when_remote_function_raised(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_call = MagicMock()
+    fake_call = _empty_graph_call()
     fake_call.get.aio = AsyncMock(
         side_effect=modal.exception.RemoteError("subprocess returned non-zero")
     )
@@ -156,7 +167,7 @@ async def test_poll_translates_message_based_not_found_from_from_id(
 async def test_poll_raises_job_not_found_for_expired_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_call = MagicMock()
+    fake_call = _empty_graph_call()
     fake_call.get.aio = AsyncMock(
         side_effect=modal.exception.OutputExpiredError("garbage collected")
     )
@@ -169,7 +180,7 @@ async def test_poll_raises_job_not_found_for_expired_output(
 async def test_poll_raises_dispatch_error_for_unknown_modal_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_call = MagicMock()
+    fake_call = _empty_graph_call()
     fake_call.get.aio = AsyncMock(side_effect=modal.exception.AuthError("token expired"))
     monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
 
@@ -180,9 +191,98 @@ async def test_poll_raises_dispatch_error_for_unknown_modal_failure(
 async def test_poll_raises_when_function_returned_non_dict(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_call = MagicMock()
+    fake_call = _empty_graph_call()
     fake_call.get.aio = AsyncMock(return_value="unexpected string")
     monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
 
     with pytest.raises(ModalDispatchError, match="expected dict"):
         await poll_prediction("fc-weird")
+
+
+# ── terminal-failure detection (call-graph signal) ──────────────────────
+
+
+def _input_info_with_status(status: dispatch.modal.call_graph.InputStatus) -> MagicMock:
+    """Mimic ``modal.call_graph.InputInfo`` with just the ``.status`` we read."""
+    info = MagicMock()
+    info.status = status
+    return info
+
+
+async def test_poll_returns_failed_on_init_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``INIT_FAILURE`` (container crash-loops at startup, e.g. missing image
+    deps) flips the job to ``failed`` immediately rather than polling forever.
+    Reproduces the user-visible symptom from the post-3.3 validation
+    (pre-``add_local_python_source`` Modal runs).
+    """
+    fake_call = MagicMock()
+    fake_call.get_call_graph.aio = AsyncMock(
+        return_value=[_input_info_with_status(dispatch.modal.call_graph.InputStatus.INIT_FAILURE)]
+    )
+    # If the code path is wrong and we reach get(), this would also surface;
+    # set it so the test fails loudly rather than hanging.
+    fake_call.get.aio = AsyncMock(side_effect=AssertionError("should not reach get()"))
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, result, error = await poll_prediction("fc-crashloop")
+    assert status == "failed"
+    assert result is None
+    assert error is not None
+    assert "INIT_FAILURE" in error
+    assert "fc-crashloop" in error
+
+
+async def test_poll_returns_failed_on_terminated(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_call = MagicMock()
+    fake_call.get_call_graph.aio = AsyncMock(
+        return_value=[_input_info_with_status(dispatch.modal.call_graph.InputStatus.TERMINATED)]
+    )
+    fake_call.get.aio = AsyncMock(side_effect=AssertionError("should not reach get()"))
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, _result, error = await poll_prediction("fc-killed")
+    assert status == "failed"
+    assert error is not None and "terminated" in error.lower()
+
+
+async def test_poll_returns_failed_on_timeout_status(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_call = MagicMock()
+    fake_call.get_call_graph.aio = AsyncMock(
+        return_value=[_input_info_with_status(dispatch.modal.call_graph.InputStatus.TIMEOUT)]
+    )
+    fake_call.get.aio = AsyncMock(side_effect=AssertionError("should not reach get()"))
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, _result, error = await poll_prediction("fc-slow")
+    assert status == "failed"
+    assert error is not None and "timeout" in error.lower()
+
+
+async def test_poll_falls_through_when_call_graph_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No call-graph signal yet (just-spawned call) — fall through to get()."""
+    fake_call = MagicMock()
+    fake_call.get_call_graph.aio = AsyncMock(return_value=[])
+    fake_call.get.aio = AsyncMock(side_effect=TimeoutError("not ready"))
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, _result, _error = await poll_prediction("fc-fresh")
+    assert status == "running"
+
+
+async def test_poll_falls_through_when_call_graph_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A transient call-graph API hiccup shouldn't flip the job to failed —
+    suppress the error and let ``get(timeout=0)`` decide."""
+    fake_call = MagicMock()
+    fake_call.get_call_graph.aio = AsyncMock(
+        side_effect=modal.exception.InternalError("call-graph upstream hiccup")
+    )
+    fake_call.get.aio = AsyncMock(return_value={"model": "boltz2", "name": "ok"})
+    monkeypatch.setattr(dispatch.modal.FunctionCall, "from_id", lambda _id: fake_call)
+
+    status, result, _error = await poll_prediction("fc-flaky")
+    assert status == "succeeded"
+    assert result == {"model": "boltz2", "name": "ok"}
