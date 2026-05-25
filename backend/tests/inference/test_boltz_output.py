@@ -114,3 +114,62 @@ def test_read_boltz_outputs_handles_missing_summary_keys(tmp_path: Path) -> None
     assert result.ptm is None
     assert result.iptm is None
     assert result.ranking_score is None
+
+
+# ── edge cases (Task 4.5) ─────────────────────────────────────────────
+
+
+def test_read_boltz_outputs_handles_nan_in_plddt(tmp_path: Path) -> None:
+    """NaNs in pLDDT should survive the load (tolist() yields ``float('nan')``).
+    Downstream — chart + LLM summary — decide how to render them, but the
+    parser must not crash.
+    """
+    _write_boltz_outputs(tmp_path, "nan_lddt", plddt=[80.0, float("nan"), 90.0])
+    result = read_boltz_outputs(tmp_path, job_name="nan_lddt")
+    assert len(result.plddt) == 3
+    # The 0-1 → 0-100 heuristic only triggers when max <= 1; with NaN present
+    # numpy's max is NaN, so the scaling branch is skipped — values stay as-is.
+    assert result.plddt[0] == 80.0
+    assert result.plddt[2] == 90.0
+    assert result.plddt[1] != result.plddt[1]  # NaN identity check
+
+
+def test_read_boltz_outputs_handles_empty_plddt_array(tmp_path: Path) -> None:
+    """``np.array([])`` is degenerate but must not crash the loader."""
+    _write_boltz_outputs(tmp_path, "empty_plddt", plddt=[])
+    result = read_boltz_outputs(tmp_path, job_name="empty_plddt")
+    assert result.plddt == []
+
+
+def test_read_boltz_outputs_handles_stringified_summary_numbers(tmp_path: Path) -> None:
+    """``nullable_float`` coerces stringified scores; surface as float."""
+    _write_boltz_outputs(
+        tmp_path,
+        "stringy",
+        summary={"confidence_score": "0.85", "ptm": "0.7", "iptm": "0.5"},
+    )
+    result = read_boltz_outputs(tmp_path, job_name="stringy")
+    assert result.ranking_score == 0.85
+    assert result.ptm == 0.7
+    assert result.iptm == 0.5
+
+
+def test_read_boltz_outputs_missing_confidence_score_returns_none(tmp_path: Path) -> None:
+    """No ``confidence_score`` key → ``ranking_score`` is ``None`` (not raised)."""
+    _write_boltz_outputs(tmp_path, "no_rank", summary={"ptm": 0.6})
+    result = read_boltz_outputs(tmp_path, job_name="no_rank")
+    assert result.ranking_score is None
+    assert result.ptm == 0.6
+
+
+def test_read_boltz_outputs_handles_garbage_summary_values(tmp_path: Path) -> None:
+    """Non-numeric values where floats are expected → ``None`` (defensive)."""
+    _write_boltz_outputs(
+        tmp_path,
+        "garbage",
+        summary={"confidence_score": "not_a_number", "ptm": None, "iptm": "x"},
+    )
+    result = read_boltz_outputs(tmp_path, job_name="garbage")
+    assert result.ranking_score is None
+    assert result.ptm is None
+    assert result.iptm is None

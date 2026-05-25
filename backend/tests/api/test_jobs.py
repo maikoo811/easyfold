@@ -275,3 +275,84 @@ async def test_get_response_model_is_none_per_design(
     async with _client() as c:
         resp = await c.get("/api/v1/jobs/fc-x")
     assert resp.json()["model"] is None
+
+
+# ── edge cases (Task 4.5) ─────────────────────────────────────────────
+
+
+async def test_post_accepts_protein_name_with_path_traversal_chars(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pydantic does not reject path-traversal-ish strings in the job name —
+    they're just text. Documents current behavior; if we later add filename
+    sanitization (e.g. for cif filenames), this test breaks loudly.
+    """
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-pt"))
+    body = {
+        "model": "boltz2",
+        "job": {"name": "../../etc/passwd", "proteins": [{"sequence": "MEEP"}]},
+    }
+    async with _client() as c:
+        resp = await c.post("/api/v1/jobs", json=body)
+    assert resp.status_code == 200
+
+
+async def test_post_accepts_very_high_copies(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No upper bound on ``copies`` today — document. If Modal / GPU memory
+    forces a cap later, this test breaks loudly.
+    """
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-c"))
+    body = {
+        "model": "boltz2",
+        "job": {"name": "many", "proteins": [{"sequence": "MEEP", "copies": 1000}]},
+    }
+    async with _client() as c:
+        resp = await c.post("/api/v1/jobs", json=body)
+    assert resp.status_code == 200
+
+
+async def test_post_accepts_5000aa_sequence(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No sequence-size cap by design — long inputs go through. Surfaces if
+    we later add a length limit at the validator boundary.
+    """
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-big"))
+    body = {
+        "model": "boltz2",
+        "job": {"name": "long", "proteins": [{"sequence": "M" + ("A" * 4999)}]},
+    }
+    async with _client() as c:
+        resp = await c.post("/api/v1/jobs", json=body)
+    assert resp.status_code == 200
+
+
+async def test_get_returns_404_for_very_long_job_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 256-char id hits the unknown-job path — 404, not a crash."""
+
+    async def boom(_id: str) -> Any:
+        raise JobNotFound("unknown job fc-stupid-long")
+
+    monkeypatch.setattr("easyfold.api.v1.jobs.poll_prediction", boom)
+    long_id = "fc-" + ("x" * 253)
+    async with _client() as c:
+        resp = await c.get(f"/api/v1/jobs/{long_id}")
+    assert resp.status_code == 404
+
+
+async def test_get_handles_unusual_chars_in_job_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """URL-encoded characters in ``job_id`` flow through to dispatch — the route
+    layer never validates the id shape itself (it's whatever Modal emits)."""
+    captured: dict[str, Any] = {}
+
+    async def fake_poll(job_id: str) -> tuple[str, Any, Any]:
+        captured["job_id"] = job_id
+        return ("running", None, None)
+
+    monkeypatch.setattr("easyfold.api.v1.jobs.poll_prediction", fake_poll)
+    # %20 = space; passing through unchanged would error in Modal, but the
+    # route layer's contract is just "forward to dispatch".
+    async with _client() as c:
+        resp = await c.get("/api/v1/jobs/fc-with%20space")
+    assert resp.status_code == 200
+    assert captured["job_id"] == "fc-with space"
