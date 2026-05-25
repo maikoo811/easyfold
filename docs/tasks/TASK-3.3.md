@@ -76,6 +76,23 @@ Ship the smallest stateless backend API + frontend wire-up that lets a user (wit
 - **The GET response's `model` field is `null` by design.** Modal's `FunctionCall` doesn't expose the originating App through the SDK. The frontend keeps the model in URL state on `/predict/[jobId]?model=…`. Documented in `JobStatusResponse.model`'s docstring and in ADR 0004 § Open.
 - **Skipped this session by design**: actual end-to-end inference. Requires the user to have deployed at least the Boltz Function (`./modal/deploy.sh boltz`) — easy now that 3.2 ships the script. The whole stack (frontend POST → backend spawn → polling → render) is wired and tested with mocks; the user's first real-world run will be the first real inference EasyFold has ever done.
 
+### Post-merge validation (real run, 2026-05-24)
+
+The first real end-to-end run for p53 (P04637, 393 residues) on Boltz-2 surfaced **eight** distinct issues that CI couldn't catch — none in code logic, all in image/runtime configuration and untested-contract assumptions. Patches were bundled into a follow-up PR (`fix/modal-deploy-and-validation-polish`):
+
+1. `add_local_python_source("easyfold")` missing from both Modal images → container `ModuleNotFoundError: easyfold` at startup.
+2. Easyfold runtime deps (`pydantic`, `httpx`, `numpy`, `pyyaml`) not in container image — Boltz/AF3 don't transitively cover them. Walk-the-import-graph means every dep must be explicit.
+3. File name `inference/boltz.py` shadowed the `boltz` PyPI package via Modal's `/root/<basename>.py` layout → `from boltz.main import cli` crashed with `'boltz' is not a package`. Renamed to `boltz_app.py`. Same packaging foot-gun class ADR 0002 warned about for directory names.
+4. `cuequivariance_torch` + `cuequivariance_ops_torch` missing → Boltz's optimized triangular-attention kernels crash. Used `--no_kernels` flag instead of fighting CUDA-native package install. Quality trade-off noted in ADR 0003.
+5. Boltz uses YAML input file's stem as output directory key → our parser looked at `boltz_results_<job.name>/` but output went to `boltz_results_input/`. Fix: name input `{job.name}.yaml`.
+6. Boltz writes pLDDT in 0-1 range, not 0-100 (AF3 convention). Parser scales when `max <= 1.0`.
+7. Mol* default UI inflates the viewer to fullscreen with State Tree + Structure Tools side panels. Passed explicit `layoutShowControls: false` etc. options to `Viewer.create()` to constrain to the contained 520px box.
+8. Backend CORS default `http://localhost:3000` didn't include `:3001`, which Next.js dev falls back to when 3000 is busy. Default now includes both.
+
+Plus async fixes: `dispatch.spawn_prediction` / `poll_prediction` made `async def` using Modal's `.aio` API to avoid blocking the FastAPI event loop. Tests updated to use `AsyncMock`.
+
+After patches, p53 prediction completes in ~20s wall time (cache-warm). LLM interpretation (Anthropic Claude API, BYOK) returned biologically informed analysis: correctly identified p53's intrinsically disordered N-terminal transactivation domain (~1-100) and C-terminal regulatory domain (~360-393), recommended PDB 2OCJ as an experimental reference, and proposed NMR/SAXS/HDX-MS over crystallography for full-length protein. **Differentiation thesis validated end-to-end.**
+
 ## Learnings
 
 - [generalizable] **Cloud runners' lazy SDKs surface errors at use-time, not lookup-time.** Modal's `Function.from_name` and `FunctionCall.from_id` return references without round-tripping to the server; "not found" surfaces on the first real operation (`.spawn()`, `.get()`) — and usually as a generic exception with a substring in the message, not as the typed `NotFoundError` the docs suggest. When mapping cloud-runner errors to API responses, plan for **two** signals: the typed exception **and** a fallback that pattern-matches the error message. Test both paths.

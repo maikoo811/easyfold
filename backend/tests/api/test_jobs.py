@@ -6,6 +6,7 @@ directly in these tests. The dispatch module's own tests
 """
 
 from typing import Any
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -51,7 +52,9 @@ def _job_body(model: str = "boltz2") -> dict[str, Any]:
 
 
 async def test_post_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", lambda _m, _j: "fc-abc123")
+    monkeypatch.setattr(
+        "easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-abc123")
+    )
 
     async with _client() as c:
         resp = await c.post("/api/v1/jobs", json=_job_body())
@@ -68,7 +71,7 @@ async def test_post_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
 async def test_post_routes_model_through_to_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, Any] = {}
 
-    def fake_spawn(model: str, job: dict[str, Any]) -> str:
+    async def fake_spawn(model: str, job: dict[str, Any]) -> str:
         captured["model"] = model
         captured["job"] = job
         return "fc-zzz"
@@ -86,7 +89,7 @@ async def test_post_routes_model_through_to_dispatch(monkeypatch: pytest.MonkeyP
 async def test_post_returns_502_when_function_not_deployed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def boom(_m: str, _j: dict[str, Any]) -> str:
+    async def boom(_m: str, _j: dict[str, Any]) -> str:
         raise ModalFunctionNotDeployed(
             "Modal Function easyfold-boltz/run_boltz is not deployed in this workspace. "
             "Run `./modal/deploy.sh boltz` first."
@@ -103,7 +106,7 @@ async def test_post_returns_502_when_function_not_deployed(
 
 
 async def test_post_returns_502_when_dispatch_errors(monkeypatch: pytest.MonkeyPatch) -> None:
-    def boom(_m: str, _j: dict[str, Any]) -> str:
+    async def boom(_m: str, _j: dict[str, Any]) -> str:
         raise ModalDispatchError("auth token expired")
 
     monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", boom)
@@ -145,7 +148,7 @@ async def test_post_returns_422_for_invalid_sequence() -> None:
 async def test_get_running_returns_status_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "easyfold.api.v1.jobs.poll_prediction",
-        lambda _id: ("running", None, None),
+        AsyncMock(return_value=("running", None, None)),
     )
 
     async with _client() as c:
@@ -164,7 +167,7 @@ async def test_get_succeeded_returns_full_model_result(
 ) -> None:
     monkeypatch.setattr(
         "easyfold.api.v1.jobs.poll_prediction",
-        lambda _id: ("succeeded", _sample_result(), None),
+        AsyncMock(return_value=("succeeded", _sample_result(), None)),
     )
 
     async with _client() as c:
@@ -184,7 +187,7 @@ async def test_get_succeeded_returns_full_model_result(
 async def test_get_failed_returns_error_string(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "easyfold.api.v1.jobs.poll_prediction",
-        lambda _id: ("failed", None, "subprocess returned non-zero"),
+        AsyncMock(return_value=("failed", None, "subprocess returned non-zero")),
     )
 
     async with _client() as c:
@@ -198,7 +201,7 @@ async def test_get_failed_returns_error_string(monkeypatch: pytest.MonkeyPatch) 
 
 
 async def test_get_returns_404_for_unknown_job(monkeypatch: pytest.MonkeyPatch) -> None:
-    def boom(_id: str) -> Any:
+    async def boom(_id: str) -> Any:
         raise JobNotFound("unknown job fc-nope")
 
     monkeypatch.setattr("easyfold.api.v1.jobs.poll_prediction", boom)
@@ -211,7 +214,7 @@ async def test_get_returns_404_for_unknown_job(monkeypatch: pytest.MonkeyPatch) 
 
 
 async def test_get_returns_502_when_modal_errors(monkeypatch: pytest.MonkeyPatch) -> None:
-    def boom(_id: str) -> Any:
+    async def boom(_id: str) -> Any:
         raise ModalDispatchError("network unreachable")
 
     monkeypatch.setattr("easyfold.api.v1.jobs.poll_prediction", boom)
@@ -229,7 +232,7 @@ async def test_get_response_model_is_none_per_design(
     """The GET response has model=null — Modal doesn't surface the App name."""
     monkeypatch.setattr(
         "easyfold.api.v1.jobs.poll_prediction",
-        lambda _id: ("succeeded", _sample_result(), None),
+        AsyncMock(return_value=("succeeded", _sample_result(), None)),
     )
     async with _client() as c:
         resp = await c.get("/api/v1/jobs/fc-x")

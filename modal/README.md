@@ -182,7 +182,7 @@ uv run modal setup
 uv run modal volume create easyfold-boltz-cache
 ```
 
-This is **optional**: `inference/boltz.py` uses `create_if_missing=True`, so the first deploy self-creates the Volume. Creating it ahead of time just lets you `modal volume ls` to verify before the first run.
+This is **optional**: `inference/boltz_app.py` uses `create_if_missing=True`, so the first deploy self-creates the Volume. Creating it ahead of time just lets you `modal volume ls` to verify before the first run.
 
 The Volume mounts at `/root/.boltz` inside the container — Boltz's default cache path. The first inference downloads ~2 GB of weights into the Volume; subsequent runs reuse them.
 
@@ -192,7 +192,7 @@ The Volume mounts at `/root/.boltz` inside the container — Boltz's default cac
 ./modal/deploy.sh boltz
 ```
 
-That runs `uv run modal deploy easyfold/inference/boltz.py` from the `backend/` directory. First deploy builds the Docker image (PyTorch + CUDA + boltz) — expect **5–10 minutes**. Subsequent deploys reuse the layer cache.
+That runs `uv run modal deploy easyfold/inference/boltz_app.py` from the `backend/` directory. First deploy builds the Docker image (PyTorch + CUDA + boltz) — expect **5–10 minutes**. Subsequent deploys reuse the layer cache.
 
 You should see something like:
 
@@ -210,7 +210,7 @@ View Deployment: https://modal.com/apps/<your-workspace>/main/deployed/easyfold-
 
 ```bash
 cd backend
-uv run modal run easyfold/inference/boltz.py::smoke
+uv run modal run easyfold/inference/boltz_app.py::smoke
 ```
 
 This sends a 30-residue test peptide through Boltz's built-in ColabFold MSA fetcher → Boltz inference and prints the output. Expected:

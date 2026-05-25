@@ -53,8 +53,11 @@ class ModalDispatchError(RuntimeError):
     """A Modal SDK call failed for an unexpected reason (network, auth, …)."""
 
 
-def spawn_prediction(model: ModelName, job_dict: dict[str, Any]) -> str:
+async def spawn_prediction(model: ModelName, job_dict: dict[str, Any]) -> str:
     """Spawn a Modal call for ``model`` with ``job_dict`` and return its object_id.
+
+    Uses Modal's async API (``.aio``) so the FastAPI event loop isn't blocked
+    during the spawn round-trip.
 
     Raises:
         ModalFunctionNotDeployed: when the App / Function isn't deployed
@@ -63,7 +66,7 @@ def spawn_prediction(model: ModelName, job_dict: dict[str, Any]) -> str:
     """
     func = _lookup_function(model)
     try:
-        call = func.spawn(job_dict)
+        call = await func.spawn.aio(job_dict)
     except modal.exception.NotFoundError as exc:
         raise _not_deployed(model, exc) from exc
     except modal.exception.Error as exc:
@@ -78,8 +81,14 @@ def spawn_prediction(model: ModelName, job_dict: dict[str, Any]) -> str:
     return object_id
 
 
-def poll_prediction(job_id: str) -> tuple[str, dict[str, Any] | None, str | None]:
+async def poll_prediction(
+    job_id: str,
+) -> tuple[str, dict[str, Any] | None, str | None]:
     """Return ``(status, result, error)`` for a previously-spawned Modal call.
+
+    Uses Modal's async ``call.get.aio()`` so the FastAPI event loop isn't
+    blocked during the (immediate-timeout) poll. ``from_id`` is kept sync
+    because it doesn't touch the network — it just constructs a reference.
 
     Status is one of ``"running"``, ``"succeeded"``, or ``"failed"``.
     (``"pending"`` is what :func:`spawn_prediction`'s caller reports for
@@ -105,7 +114,7 @@ def poll_prediction(job_id: str) -> tuple[str, dict[str, Any] | None, str | None
         raise ModalDispatchError(f"failed to poll {job_id}: {exc}") from exc
 
     try:
-        result = call.get(timeout=0)
+        result = await call.get.aio(timeout=0)
     except TimeoutError:
         return ("running", None, None)
     except modal.exception.OutputExpiredError as exc:

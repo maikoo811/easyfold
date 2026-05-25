@@ -48,7 +48,26 @@ af3_image = (
         "cd /opt/alphafold3 && uv pip install --system --no-cache-dir -e .",
         "uv pip install --system --no-cache-dir 'jax[cuda12]==0.4.34'",
     )
-    .pip_install("httpx==0.28.*")  # for colabfold.py inside the container
+    # IMPORTANT: with ``add_local_python_source("easyfold")`` below, *every*
+    # runtime dep the mounted ``easyfold`` package imports must be present in
+    # the image — Python walks the import graph at container start. Keep this
+    # list in sync with ``pyproject.toml`` ``[project] dependencies``.
+    #   - httpx     — easyfold.inference.colabfold (also direct: AF3 MSA fetch)
+    #   - pydantic  — easyfold.af3_input.models
+    #   - numpy     — easyfold.inference.boltz_output (re-exported by inference/__init__)
+    #   - pyyaml    — easyfold.boltz_input.builder (not imported by af3 path, but
+    #                 easyfold/__init__-time loading may pull it in indirectly)
+    .pip_install(
+        "httpx==0.28.*",
+        "pydantic>=2",
+        # alphafold3/jax may also pin numpy<2; use the same range as boltz for parity.
+        "numpy>=1.26,<2",
+        "pyyaml==6.*",
+    )
+    # Mount the local ``easyfold`` package so the function module's imports
+    # (e.g. ``from easyfold.inference.colabfold import …``) resolve inside the
+    # container. Without this Modal only copies the deployed file.
+    .add_local_python_source("easyfold")
 )
 
 weights_volume = modal.Volume.from_name(WEIGHTS_VOLUME_NAME, create_if_missing=False)
