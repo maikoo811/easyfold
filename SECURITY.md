@@ -16,7 +16,7 @@ EasyFold is **BYOK + BYOC** (bring your own API key, bring your own cloud):
 
 - The Anthropic API key lives only in the browser tab's React state — never sent to the EasyFold backend, never persisted to `localStorage`.
 - Inference runs in **your** Modal account, not ours. We never run a hosted service.
-- The backend is stateless (no DB, no auth, no user accounts). Job IDs are Modal's `FunctionCall.object_id` — unguessable but a single URL token is enough to read the job's result.
+- The backend is stateless (no DB, no auth, no user accounts). Job IDs are Modal's `FunctionCall.object_id` — ~131 bits of entropy, unguessable in practice. **But the URL is itself the auth token**: anyone who learns a `/predict/{jobId}` URL can read the result, so treat job URLs like bearer secrets (don't paste them in chat, screenshots, or email if the prediction is sensitive). There is no separate `Authorization` header to revoke.
 
 That shape makes a few classes of report explicitly **in scope**:
 

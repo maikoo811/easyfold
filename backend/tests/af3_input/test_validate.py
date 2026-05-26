@@ -109,9 +109,12 @@ def test_protein_sequence_with_null_byte_raises() -> None:
         validate_af3_input(data)
 
 
-def test_protein_sequence_with_10000_aas_is_accepted() -> None:
-    """No size cap by design — verify a 10k-aa sequence survives validation.
-    If we later cap (e.g. for GPU memory), this test breaks loudly.
+def test_protein_sequence_with_10000_aas_is_accepted_by_validator() -> None:
+    """The structural validator deliberately has no size cap — the cap lives
+    at the Pydantic input boundary (``ProteinSpec.sequence: max_length=3000``,
+    enforced by ``POST /api/v1/jobs``). Keeping the validator unbounded means
+    builder-emitted JSON can still be revalidated without spurious failures
+    if the Pydantic cap ever loosens.
     """
     data = _valid()
     data["sequences"] = [{"protein": {"id": "A", "sequence": "A" * 10000}}]

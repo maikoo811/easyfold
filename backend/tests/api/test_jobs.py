@@ -297,9 +297,9 @@ async def test_post_accepts_protein_name_with_path_traversal_chars(
     assert resp.status_code == 200
 
 
-async def test_post_accepts_very_high_copies(monkeypatch: pytest.MonkeyPatch) -> None:
-    """No upper bound on ``copies`` today — document. If Modal / GPU memory
-    forces a cap later, this test breaks loudly.
+async def test_post_rejects_excessive_copies(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``copies`` is capped at 20 (homo-multimer ceiling for MVP); requests
+    above the cap must 422 before reaching Modal.
     """
     monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-c"))
     body = {
@@ -308,13 +308,23 @@ async def test_post_accepts_very_high_copies(monkeypatch: pytest.MonkeyPatch) ->
     }
     async with _client() as c:
         resp = await c.post("/api/v1/jobs", json=body)
+    assert resp.status_code == 422
+
+
+async def test_post_accepts_max_copies(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``copies=20`` is the documented ceiling and must be accepted."""
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-c20"))
+    body = {
+        "model": "boltz2",
+        "job": {"name": "twenty", "proteins": [{"sequence": "MEEP", "copies": 20}]},
+    }
+    async with _client() as c:
+        resp = await c.post("/api/v1/jobs", json=body)
     assert resp.status_code == 200
 
 
-async def test_post_accepts_5000aa_sequence(monkeypatch: pytest.MonkeyPatch) -> None:
-    """No sequence-size cap by design — long inputs go through. Surfaces if
-    we later add a length limit at the validator boundary.
-    """
+async def test_post_rejects_oversized_sequence(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sequences > 3000 aa exceed the documented per-chain cap and must 422."""
     monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-big"))
     body = {
         "model": "boltz2",
@@ -322,7 +332,34 @@ async def test_post_accepts_5000aa_sequence(monkeypatch: pytest.MonkeyPatch) -> 
     }
     async with _client() as c:
         resp = await c.post("/api/v1/jobs", json=body)
+    assert resp.status_code == 422
+
+
+async def test_post_accepts_max_sequence(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 3000-aa sequence sits exactly at the cap and must be accepted."""
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-cap"))
+    body = {
+        "model": "boltz2",
+        "job": {"name": "atcap", "proteins": [{"sequence": "M" + ("A" * 2999)}]},
+    }
+    async with _client() as c:
+        resp = await c.post("/api/v1/jobs", json=body)
     assert resp.status_code == 200
+
+
+async def test_post_rejects_oversized_request_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The 5 MB request-body middleware bounces oversized payloads with 413
+    before they reach Pydantic / dispatch.
+    """
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-never"))
+    async with _client() as c:
+        resp = await c.post(
+            "/api/v1/jobs",
+            content=b"{}",
+            headers={"content-length": str(10 * 1024 * 1024), "content-type": "application/json"},
+        )
+    assert resp.status_code == 413
+    assert "too large" in resp.json()["detail"]
 
 
 async def test_get_returns_404_for_very_long_job_id(monkeypatch: pytest.MonkeyPatch) -> None:

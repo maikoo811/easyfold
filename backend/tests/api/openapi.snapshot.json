@@ -179,11 +179,13 @@
             "items": {
               "type": "string"
             },
+            "maxItems": 5,
             "title": "Ccd Codes",
             "type": "array"
           },
           "copies": {
             "default": 1,
+            "maximum": 20.0,
             "minimum": 1.0,
             "title": "Copies",
             "type": "integer"
@@ -191,6 +193,7 @@
           "smiles": {
             "anyOf": [
               {
+                "maxLength": 2000,
                 "type": "string"
               },
               {
@@ -315,6 +318,7 @@
           },
           "ptm_type": {
             "description": "AF3 PTM code, e.g. PHOSPHO.",
+            "maxLength": 20,
             "minLength": 1,
             "title": "Ptm Type",
             "type": "string"
@@ -334,6 +338,7 @@
             "items": {
               "$ref": "#/components/schemas/LigandSpec"
             },
+            "maxItems": 10,
             "title": "Ligands",
             "type": "array"
           },
@@ -342,12 +347,14 @@
             "items": {
               "type": "integer"
             },
+            "maxItems": 5,
             "minItems": 1,
             "title": "Model Seeds",
             "type": "array"
           },
           "name": {
             "description": "Human-readable job identifier.",
+            "maxLength": 100,
             "minLength": 1,
             "title": "Name",
             "type": "string"
@@ -357,6 +364,7 @@
             "items": {
               "$ref": "#/components/schemas/ProteinSpec"
             },
+            "maxItems": 10,
             "minItems": 1,
             "title": "Proteins",
             "type": "array"
@@ -375,6 +383,7 @@
           "copies": {
             "default": 1,
             "description": "Number of identical chains AF3 should generate.",
+            "maximum": 20.0,
             "minimum": 1.0,
             "title": "Copies",
             "type": "integer"
@@ -383,11 +392,13 @@
             "items": {
               "$ref": "#/components/schemas/ModificationSpec"
             },
+            "maxItems": 20,
             "title": "Modifications",
             "type": "array"
           },
           "sequence": {
             "description": "One-letter amino acid sequence; whitespace stripped, uppercased.",
+            "maxLength": 3000,
             "title": "Sequence",
             "type": "string"
           }
