@@ -115,9 +115,9 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 4.3
   - Acceptance: frontend `pnpm test` green with 54 tests; backend `uv run pytest` green with 185 tests; mypy/ruff still clean; OpenAPI snapshot test passes + regen script is idempotent; CI on PR #18 green on both jobs.
 
-- [ ] **5.2 Public release** ← **NEXT**
-  - Status: Not started · Branch: —
-  - Flip the GitHub repo from Private to Public (Settings → General → Danger Zone). Enable branch protection on `main` (require PR + CI; no force push; no deletion). Enable Discussions. Cut a `v1.0.0` git tag with release notes summarising 1.x–4.3.
+- [~] **5.2 Public release** ← **NEXT** · Branch: `chore/public-release-v1.0.0`
+  - Status: In progress · Started: 2026-05-26
+  - Flip the GitHub repo from Private to Public (Settings → General → Danger Zone). Enable branch protection on `main` (require PR + CI; no force push; no deletion; require linear history). Enable Discussions. Cut a `v1.0.0` git tag with release notes summarising 1.x–4.5.
   - Depends: 4.3 (formally; the agreed pre-Public sweet-spot path pulls 5.2 ahead of 4.1 / 4.2 / 4.4 / 5.1 — those become post-Public follow-ups, since the repo is fully usable as-is via the README's Boltz quickstart)
   - Acceptance: repo Public; `main` branch protection active; v1.0.0 tagged; README + HF demo URL both load on first visit.
 
