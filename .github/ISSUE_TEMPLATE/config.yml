@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔐 Security vulnerability
+    url: https://github.com/maikoo811/easyfold/security/policy
+    about: >-
+      Please don't open a public issue for security reports.
+      See SECURITY.md for the disclosure email + threat model.
+  - name: 💬 Question or discussion
+    url: https://github.com/maikoo811/easyfold/discussions
+    about: >-
+      For questions, ideas, or "how do I…?" — use Discussions instead of Issues.
+      Reserves Issues for actionable bugs and features.

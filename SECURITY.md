@@ -35,3 +35,22 @@ And a few classes explicitly **out of scope**:
 ## What about my data?
 
 See the **"What leaves your machine"** table in [`README.md`](README.md) — it lists every outbound request a prediction makes (ColabFold gets the sequence; UniProt/RCSB gets the accession ID only; Anthropic gets the summary stats + your question). If you spot an outbound request not on that list, that itself is a security report worth sending.
+
+## If you expose the backend as a public service
+
+EasyFold's threat model assumes **you run the backend for yourself** (or a small trusted team) on `localhost` or a private network. The defaults reflect that:
+
+- `EASYFOLD_CORS_ORIGINS` defaults to `localhost:3000,3001`.
+- Error responses include verbose detail (`"Modal Function easyfold-boltz/run_boltz is not deployed in this workspace. Run ./modal/deploy.sh boltz first."`) — friendly when *you* are debugging your own deploy.
+- No rate limiting on `POST /api/v1/jobs`.
+
+If you publish the backend as a service strangers can hit, **these defaults become risks** and you should harden:
+
+1. **Add rate limiting.** A single `POST /api/v1/jobs` spawns a Modal Function call against *your* Modal account; an unfriendly user can burn your credits in minutes. Use [`slowapi`](https://pypi.org/project/slowapi/), an upstream gateway (Cloudflare, nginx `limit_req`), or your platform's built-in rate limiter. Cap per-IP and per-hour.
+2. **Generic-ify error responses.** The 502 responses currently echo Modal's error string. For a public deployment, intercept the `JobNotFound` / `ModalDispatchError` / `ModalFunctionNotDeployed` handlers in `backend/easyfold/main.py` to return a generic `{"detail": "upstream error"}` and log the detail server-side instead.
+3. **Tighten CORS.** Set `EASYFOLD_CORS_ORIGINS` to your real frontend origin(s) — never wildcard.
+4. **Authenticate `/api/v1/jobs/{job_id}`.** Today the job ID is a bearer secret (~131 bits, unguessable). For a multi-tenant public service, add a session or API-key check so URL leaks don't expose results.
+5. **Consider a TLS-terminating proxy.** The FastAPI process serves HTTP; production deploys should put it behind nginx / Caddy / a managed load balancer with HTTPS + HSTS.
+6. **Re-audit the Anthropic key flow.** EasyFold ships with browser-direct fetch to `api.anthropic.com`. A public deployment increases the value of a malicious-JS supply-chain attack against the key. You may want a backend-relay flavor (note: this changes the privacy contract — document it).
+
+These hardenings are **out of scope for v1.0** because the primary supported use case is BYOC self-host. If you do harden a public deployment, please open an issue or send a PR — we'd like to upstream the docs.

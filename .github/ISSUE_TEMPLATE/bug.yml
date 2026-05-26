@@ -1,0 +1,75 @@
+name: 🐛 Bug report
+description: Something doesn't work the way the docs / UI say it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug.
+
+        **Before submitting**: if this is a security vulnerability, please don't open a public issue — see [SECURITY.md](https://github.com/maikoo811/easyfold/blob/main/SECURITY.md) for the disclosure email instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug — what you saw vs. what you expected.
+      placeholder: |
+        I clicked Predict with Boltz-2 and the job got stuck on "running" for 30 minutes.
+        The Modal dashboard shows it failed with "ModuleNotFoundError: cuequivariance_torch".
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Step-by-step minimal repro. Include the input sequence / accession ID if relevant.
+      placeholder: |
+        1. `git clone … && cd easyfold && cd backend && uv sync && cd ../frontend && pnpm install`
+        2. `uv run modal setup` (already authenticated as alice@example.com)
+        3. `./modal/deploy.sh boltz`
+        4. Open http://localhost:3000, paste sequence "MEEPQSDPS…" (full sequence here)
+        5. Click "Predict with Boltz-2"
+        6. Wait 5+ minutes — job stays on "running" instead of completing
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Which model?
+      description: AlphaFold 3 or Boltz-2 (or both).
+      placeholder: Boltz-2
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit SHA / tag
+      description: Output of `git rev-parse HEAD` (or the release tag if you ran a release).
+      placeholder: e.g. v1.0.0 or 1234abcd
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / error messages
+      description: Backend log lines, frontend console errors, Modal app logs — whatever's relevant. Code-fence (` ``` `) long blocks.
+      render: shell
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: |
+        OS + versions. Run these and paste:
+        ```
+        uname -a
+        python --version
+        node --version
+        pnpm --version
+        ```
+      render: shell
