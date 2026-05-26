@@ -121,6 +121,8 @@ EasyFold is zero-hosting and we never see your data, but a prediction still reac
 
 If you're handling IP-sensitive sequences, the ColabFold step is the one to scrutinize. Self-hosting a ColabFold mmseqs2 server (the project publishes the Docker image) is the supported escape hatch.
 
+**One more thing — job result URLs are bearer secrets.** Anyone with the `/predict/{jobId}` URL can read the prediction. The `jobId` is Modal's `FunctionCall.object_id` (~131 bits of entropy, unguessable) but treat the URL itself like an API token: don't paste it in chat, screenshots, or email if the result is sensitive.
+
 Security reports: see [`SECURITY.md`](SECURITY.md).
 
 ---

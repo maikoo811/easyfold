@@ -1,8 +1,9 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from starlette.middleware.base import RequestResponseEndpoint
 
 from easyfold.api.v1 import router as v1_router
 from easyfold.external import (
@@ -16,7 +17,37 @@ from easyfold.inference.dispatch import (
     ModalFunctionNotDeployed,
 )
 
+# 5 MB is comfortably above the largest legitimate assembly POST (a
+# 3000 aa x 10 chains x 5 seeds job is ~150 KB) and well below the point
+# where parsing starts costing real CPU. The cap is defense-in-depth:
+# Pydantic validation would also reject oversized inputs, but bouncing
+# huge bodies before parsing avoids waste.
+MAX_REQUEST_BODY_BYTES = 5 * 1024 * 1024
+
 app = FastAPI(title="EasyFold API", version="0.1.0")
+
+
+@app.middleware("http")
+async def limit_request_body_size(request: Request, call_next: RequestResponseEndpoint) -> Response:
+    """Reject requests whose declared body size exceeds ``MAX_REQUEST_BODY_BYTES``.
+
+    Only enforces against ``Content-Length`` — chunked requests without a
+    declared length pass through to the route, which is fine because every
+    real EasyFold body is small JSON.
+    """
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > MAX_REQUEST_BODY_BYTES:
+        return JSONResponse(
+            status_code=413,
+            content={
+                "detail": (
+                    f"request body too large ({declared} bytes > "
+                    f"{MAX_REQUEST_BODY_BYTES} bytes limit)"
+                )
+            },
+        )
+    return await call_next(request)
+
 
 # Default includes both 3000 and 3001 because Next.js dev auto-falls-back to
 # 3001 when 3000 is busy — a common dev-time footgun. Override via env var if

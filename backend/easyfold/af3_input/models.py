@@ -15,20 +15,26 @@ STANDARD_AAS: frozenset[str] = frozenset("ACDEFGHIKLMNPQRSTVWY")
 class ModificationSpec(BaseModel):
     """A post-translational modification at a 1-indexed residue position."""
 
-    ptm_type: str = Field(min_length=1, description="AF3 PTM code, e.g. PHOSPHO.")
+    ptm_type: str = Field(min_length=1, max_length=20, description="AF3 PTM code, e.g. PHOSPHO.")
     ptm_position: int = Field(ge=1, description="1-indexed residue position within the chain.")
 
 
 class ProteinSpec(BaseModel):
     """A single protein entity. ``copies`` > 1 emits a homo-multimer in the AF3 JSON."""
 
+    # 3000 aa covers >99% of known proteins and fits comfortably on an H100;
+    # tighten only if a future smaller-GPU profile demands it.
     sequence: str = Field(
-        ..., description="One-letter amino acid sequence; whitespace stripped, uppercased."
+        ...,
+        max_length=3000,
+        description="One-letter amino acid sequence; whitespace stripped, uppercased.",
     )
+    # 20 copies covers realistic homo-multimer requests (capsids, ribosomes
+    # would exceed this — those are out of scope for MVP).
     copies: int = Field(
-        default=1, ge=1, description="Number of identical chains AF3 should generate."
+        default=1, ge=1, le=20, description="Number of identical chains AF3 should generate."
     )
-    modifications: list[ModificationSpec] = Field(default_factory=list)
+    modifications: list[ModificationSpec] = Field(default_factory=list, max_length=20)
 
     @field_validator("sequence", mode="before")
     @classmethod
@@ -61,11 +67,15 @@ class ProteinSpec(BaseModel):
 class LigandSpec(BaseModel):
     """A small molecule, by SMILES or PDB Chemical Component Dictionary codes."""
 
-    smiles: str | None = Field(default=None, description="SMILES string for the ligand.")
-    ccd_codes: list[str] = Field(
-        default_factory=list, description="PDB CCD codes (e.g. ['HEM', 'NAG'])."
+    smiles: str | None = Field(
+        default=None, max_length=2000, description="SMILES string for the ligand."
     )
-    copies: int = Field(default=1, ge=1)
+    ccd_codes: list[str] = Field(
+        default_factory=list,
+        max_length=5,
+        description="PDB CCD codes (e.g. ['HEM', 'NAG']).",
+    )
+    copies: int = Field(default=1, ge=1, le=20)
 
     @model_validator(mode="after")
     def _need_smiles_or_ccd(self) -> Self:
@@ -77,13 +87,14 @@ class LigandSpec(BaseModel):
 class PredictionJob(BaseModel):
     """A complete prediction request in EasyFold's internal vocabulary."""
 
-    name: str = Field(min_length=1, description="Human-readable job identifier.")
+    name: str = Field(min_length=1, max_length=100, description="Human-readable job identifier.")
     proteins: list[ProteinSpec] = Field(
-        min_length=1, description="One or more protein entities to predict."
+        min_length=1, max_length=10, description="One or more protein entities to predict."
     )
-    ligands: list[LigandSpec] = Field(default_factory=list)
+    ligands: list[LigandSpec] = Field(default_factory=list, max_length=10)
     model_seeds: list[int] = Field(
         default_factory=lambda: [1],
         min_length=1,
+        max_length=5,
         description="Per-seed predictions enable ensemble outputs.",
     )
