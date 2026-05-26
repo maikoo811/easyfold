@@ -87,7 +87,17 @@ class LigandSpec(BaseModel):
 class PredictionJob(BaseModel):
     """A complete prediction request in EasyFold's internal vocabulary."""
 
-    name: str = Field(min_length=1, max_length=100, description="Human-readable job identifier.")
+    # Permissive enough for real research naming ("p53 (R175H)", "kinase_active_site",
+    # "v1.0", "DBD-CTD") but blocks path-traversal characters (`/`, `\`), shell
+    # metacharacters, NUL bytes, and non-ASCII glyphs. Slash is excluded
+    # deliberately so `{job.name}.yaml`-style paths can't cross directories.
+    # Greek letters etc. are also rejected — use ASCII names ("alpha") instead.
+    name: str = Field(
+        min_length=1,
+        max_length=100,
+        pattern=r"^[A-Za-z0-9_\-. ()]+$",
+        description="Human-readable job identifier.",
+    )
     proteins: list[ProteinSpec] = Field(
         min_length=1, max_length=10, description="One or more protein entities to predict."
     )

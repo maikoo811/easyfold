@@ -14,6 +14,13 @@ dependencies = [
     "uvicorn[standard]>=0.47.0",
 ]
 
+[project.optional-dependencies]
+# Per-IP rate limiting on `POST /api/v1/jobs`. Enable via
+# `uv sync --extra ratelimit` + set `EASYFOLD_RATE_LIMIT_JOBS_PER_IP_PER_HOUR`.
+# Recommended only when serving the backend to untrusted clients — single-user
+# self-host doesn't need this.
+ratelimit = ["slowapi>=0.1.9"]
+
 [dependency-groups]
 dev = [
     "hypothesis>=6.152.9",
@@ -49,6 +56,12 @@ select = ["E", "F", "I", "B", "UP", "N", "RUF"]
 python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
+
+# slowapi is an optional dependency; mypy may not have it installed in CI.
+# The runtime check in api/rate_limit.py handles the import-time fallback.
+[[tool.mypy.overrides]]
+module = ["slowapi", "slowapi.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

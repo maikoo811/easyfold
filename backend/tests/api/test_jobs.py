@@ -280,12 +280,11 @@ async def test_get_response_model_is_none_per_design(
 # ── edge cases (Task 4.5) ─────────────────────────────────────────────
 
 
-async def test_post_accepts_protein_name_with_path_traversal_chars(
+async def test_post_rejects_path_traversal_chars_in_name(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Pydantic does not reject path-traversal-ish strings in the job name —
-    they're just text. Documents current behavior; if we later add filename
-    sanitization (e.g. for cif filenames), this test breaks loudly.
+    """``PredictionJob.name`` is regex-restricted to safe characters; path-
+    traversal forms (``../``) are bounced with 422 before reaching dispatch.
     """
     monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-pt"))
     body = {
@@ -294,7 +293,36 @@ async def test_post_accepts_protein_name_with_path_traversal_chars(
     }
     async with _client() as c:
         resp = await c.post("/api/v1/jobs", json=body)
+    assert resp.status_code == 422
+
+
+async def test_post_accepts_research_name_with_parens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Realistic research naming like ``p53 (R175H)`` must remain valid."""
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-r"))
+    body = {
+        "model": "boltz2",
+        "job": {"name": "p53 (R175H)", "proteins": [{"sequence": "MEEP"}]},
+    }
+    async with _client() as c:
+        resp = await c.post("/api/v1/jobs", json=body)
     assert resp.status_code == 200
+
+
+async def test_post_rejects_shell_metacharacters_in_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Shell metacharacters (`;`, `|`, `$`, backticks) are rejected too."""
+    monkeypatch.setattr("easyfold.api.v1.jobs.spawn_prediction", AsyncMock(return_value="fc-x"))
+    for bad in ["p53; rm -rf", "job|cat", "$(whoami)"]:
+        body = {
+            "model": "boltz2",
+            "job": {"name": bad, "proteins": [{"sequence": "MEEP"}]},
+        }
+        async with _client() as c:
+            resp = await c.post("/api/v1/jobs", json=body)
+        assert resp.status_code == 422, f"expected 422 for name={bad!r}, got {resp.status_code}"
 
 
 async def test_post_rejects_excessive_copies(monkeypatch: pytest.MonkeyPatch) -> None:

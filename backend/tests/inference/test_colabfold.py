@@ -39,12 +39,12 @@ def test_fetch_msa_polls_until_complete() -> None:
         httpx.Response(200, json={"status": "COMPLETE"}),
     ]
     respx.get(f"{COLABFOLD_API}/result/download/t").mock(
-        return_value=httpx.Response(200, text="msa")
+        return_value=httpx.Response(200, text=">seq\nmsa\n")
     )
 
     result = fetch_msa_for("MEEP", poll_interval_s=0.0)
 
-    assert result == "msa"
+    assert result == ">seq\nmsa\n"
     assert poll_route.call_count == 3
 
 
@@ -152,4 +152,64 @@ def test_fetch_msa_raises_on_poll_non_json() -> None:
         return_value=httpx.Response(200, text="<html>error</html>")
     )
     with pytest.raises(ColabFoldError, match=r"non-JSON"):
+        fetch_msa_for("MEEP", poll_interval_s=0.0)
+
+
+@respx.mock
+def test_fetch_msa_raises_on_json_error_body() -> None:
+    """ColabFold sometimes returns JSON error payloads at the download step
+    (e.g. ``{"error": "rate limited"}``) — surface as ``ColabFoldError``
+    rather than passing the JSON to the downstream A3M parser.
+    """
+    respx.post(f"{COLABFOLD_API}/ticket/msa").mock(
+        return_value=httpx.Response(200, json={"id": "t"})
+    )
+    respx.get(f"{COLABFOLD_API}/ticket/t").mock(
+        return_value=httpx.Response(200, json={"status": "COMPLETE"})
+    )
+    respx.get(f"{COLABFOLD_API}/result/download/t").mock(
+        return_value=httpx.Response(200, json={"error": "rate limited"})
+    )
+    with pytest.raises(ColabFoldError, match=r"application/json"):
+        fetch_msa_for("MEEP", poll_interval_s=0.0)
+
+
+@respx.mock
+def test_fetch_msa_raises_on_html_error_body() -> None:
+    """HTML response on the download step (upstream gateway returning a
+    'service unavailable' page) → ``ColabFoldError``.
+    """
+    respx.post(f"{COLABFOLD_API}/ticket/msa").mock(
+        return_value=httpx.Response(200, json={"id": "t"})
+    )
+    respx.get(f"{COLABFOLD_API}/ticket/t").mock(
+        return_value=httpx.Response(200, json={"status": "COMPLETE"})
+    )
+    respx.get(f"{COLABFOLD_API}/result/download/t").mock(
+        return_value=httpx.Response(
+            200,
+            headers={"content-type": "text/html"},
+            text="<html><body>503</body></html>",
+        )
+    )
+    with pytest.raises(ColabFoldError, match=r"text/html"):
+        fetch_msa_for("MEEP", poll_interval_s=0.0)
+
+
+@respx.mock
+def test_fetch_msa_raises_on_non_a3m_text_body() -> None:
+    """text/plain body that doesn't start with '>' (not a FASTA-style A3M header)
+    → ``ColabFoldError``. Catches malformed responses missed by the content-type
+    heuristic (e.g. plain-text "error" message).
+    """
+    respx.post(f"{COLABFOLD_API}/ticket/msa").mock(
+        return_value=httpx.Response(200, json={"id": "t"})
+    )
+    respx.get(f"{COLABFOLD_API}/ticket/t").mock(
+        return_value=httpx.Response(200, json={"status": "COMPLETE"})
+    )
+    respx.get(f"{COLABFOLD_API}/result/download/t").mock(
+        return_value=httpx.Response(200, text="not a valid A3M file")
+    )
+    with pytest.raises(ColabFoldError, match=r"unexpected format"):
         fetch_msa_for("MEEP", poll_interval_s=0.0)
