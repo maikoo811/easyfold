@@ -77,10 +77,7 @@ cd ..
 ./modal/deploy.sh boltz       # first deploy builds the image, ~5-10 min
 
 # 4. Start backend (terminal 1)
-#    EASYFOLD_CORS_ORIGINS is required — empty by default for safety.
-cd backend && \
-  EASYFOLD_CORS_ORIGINS=http://localhost:3000,http://localhost:3001 \
-  uv run uvicorn easyfold.main:app --reload
+cd backend && uv run uvicorn easyfold.main:app --reload
 
 # 5. Start frontend (terminal 2)
 cd frontend && pnpm dev
