@@ -63,12 +63,13 @@ async def limit_request_body_size(request: Request, call_next: RequestResponseEn
     return await call_next(request)
 
 
-# CORS is empty by default (no cross-origin requests succeed). Set
-# `EASYFOLD_CORS_ORIGINS` to the comma-separated list of origins you want to
-# allow. For local Next.js dev:
+# CORS defaults to `http://localhost:3000` so the Quickstart's local dev
+# stack works out of the box. Set `EASYFOLD_CORS_ORIGINS` to a comma-separated
+# list to override — e.g. when Next.js dev falls back to 3001 (port collision):
 #   EASYFOLD_CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-# Documented in .env.example and modal/README.md.
-_cors_origins_raw = os.environ.get("EASYFOLD_CORS_ORIGINS", "").strip()
+# or when serving the backend behind a real frontend domain in production:
+#   EASYFOLD_CORS_ORIGINS=https://your-frontend.example.com
+_cors_origins_raw = os.environ.get("EASYFOLD_CORS_ORIGINS", "http://localhost:3000").strip()
 _cors_origins = (
     [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] if _cors_origins_raw else []
 )
