@@ -173,3 +173,40 @@ def test_read_boltz_outputs_handles_garbage_summary_values(tmp_path: Path) -> No
     assert result.ranking_score is None
     assert result.ptm is None
     assert result.iptm is None
+
+
+# ── pLDDT scaling traceability (Task 5.2-prep) ──────────────────────────
+
+
+def test_plddt_scale_applied_flag_set_when_boltz_writes_0_1(tmp_path: Path) -> None:
+    """Boltz default 0-1 range → 0-100 scaling applied; flag is True."""
+    _write_boltz_outputs(tmp_path, "scaled", plddt=[0.5, 0.7, 0.9])
+    result = read_boltz_outputs(tmp_path, job_name="scaled")
+    assert result.plddt == [50.0, 70.0, 90.0]
+    assert result.extras["plddt_scale_applied"] is True
+
+
+def test_plddt_scale_applied_at_max_1_0_boundary(tmp_path: Path) -> None:
+    """``max <= 1.0`` — pLDDT array with max exactly 1.0 still gets scaled."""
+    _write_boltz_outputs(tmp_path, "boundary", plddt=[0.5, 1.0])
+    result = read_boltz_outputs(tmp_path, job_name="boundary")
+    assert result.plddt == [50.0, 100.0]
+    assert result.extras["plddt_scale_applied"] is True
+
+
+def test_plddt_scale_not_applied_when_values_already_0_100(tmp_path: Path) -> None:
+    """If Boltz changes to write 0-100 directly, the heuristic skips the scale
+    multiplier and the flag is False (so downstream knows the source format).
+    """
+    _write_boltz_outputs(tmp_path, "already_scaled", plddt=[50.0, 70.0, 90.0])
+    result = read_boltz_outputs(tmp_path, job_name="already_scaled")
+    assert result.plddt == [50.0, 70.0, 90.0]
+    assert result.extras["plddt_scale_applied"] is False
+
+
+def test_plddt_scale_applied_false_when_plddt_array_absent(tmp_path: Path) -> None:
+    """No .npz on disk → empty pLDDT list + flag stays False."""
+    _write_boltz_outputs(tmp_path, "no_plddt")  # plddt= not passed; no .npz written
+    result = read_boltz_outputs(tmp_path, job_name="no_plddt")
+    assert result.plddt == []
+    assert result.extras["plddt_scale_applied"] is False

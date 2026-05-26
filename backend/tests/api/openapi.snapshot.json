@@ -356,6 +356,7 @@
             "description": "Human-readable job identifier.",
             "maxLength": 100,
             "minLength": 1,
+            "pattern": "^[A-Za-z0-9_\\-. ()]+$",
             "title": "Name",
             "type": "string"
           },
@@ -480,7 +481,7 @@
     },
     "/api/v1/jobs": {
       "post": {
-        "description": "Spawn a Modal prediction job and return the Modal FunctionCall id.\n\nThe response always carries ``status=\"pending\"`` \u2014 we don't poll\nModal here. The frontend's first GET will flip it to ``\"running\"``.",
+        "description": "Spawn a Modal prediction job and return the Modal FunctionCall id.\n\nThe response always carries ``status=\"pending\"`` \u2014 we don't poll\nModal here. The frontend's first GET will flip it to ``\"running\"``.\n\n``request`` is a FastAPI :class:`Request` object that slowapi's\noptional rate-limit decorator reads (for ``get_remote_address``). It's\nunused inside the handler when the rate limiter is disabled.",
         "operationId": "create_job_api_v1_jobs_post",
         "requestBody": {
           "content": {

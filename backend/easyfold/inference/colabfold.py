@@ -133,7 +133,26 @@ def _download_a3m(client: httpx.Client, *, ticket_id: str) -> str:
     # depending on the endpoint version. Treat the response as text for the
     # raw-A3M path; the tarball path requires a parser we can add later if
     # the server forces it.
+    content_type = response.headers.get("content-type", "").lower()
+    if content_type.startswith(("text/html", "application/json")):
+        # ColabFold occasionally returns an error page (HTML) or a JSON
+        # error payload instead of the A3M body — surface that as an error
+        # rather than feeding HTML to the downstream parser.
+        raise ColabFoldError(
+            f"MSA download for ticket {ticket_id} returned {content_type!r} instead of A3M "
+            "— ColabFold may be returning an error page or rate-limit response"
+        )
+
     body = response.text
     if not body.strip():
         raise ColabFoldError(f"MSA download for ticket {ticket_id} was empty")
+
+    # A3M files start with a FASTA-style header line (e.g. ">seq\n..."). If the
+    # body looks like anything else, fail loudly rather than passing garbage to
+    # the downstream AF3 / Boltz consumers.
+    if not body.lstrip().startswith(">"):
+        raise ColabFoldError(
+            f"MSA download for ticket {ticket_id} returned unexpected format "
+            f"(expected A3M starting with '>'); body prefix={body[:200]!r}"
+        )
     return body
