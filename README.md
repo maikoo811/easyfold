@@ -6,6 +6,8 @@
 [![Live demo on Hugging Face Spaces](https://img.shields.io/badge/demo-Hugging%20Face%20Spaces-yellow.svg)](https://huggingface.co/spaces/maiko811/easyfold-demo)
 [![Models: AlphaFold 3 + Boltz-2](https://img.shields.io/badge/models-AlphaFold%203%20%2B%20Boltz--2-teal.svg)](#pick-a-model)
 
+> ⚠️ **Research tool — not for medical, diagnostic, or clinical use.** EasyFold is an MVP for exploratory structural biology. Predictions are computational hypotheses, not validated against any clinical standard. Do not use to inform patient care or regulatory submissions.
+
 ![Step 1 — build your assembly: protein + copies + modifications + ligand, with chain ID preview](docs/screenshots/input.png)
 
 > **Build** — point and click your way to a multi-chain assembly with ligands and post-translational modifications. No JSON.
@@ -42,7 +44,9 @@ EasyFold is **zero-hosting OSS**: you deploy to your own [Modal](https://modal.c
 
 No install, no GPU, no API key needed (unless you want to try the Interpret panel — that's bring-your-own [Anthropic API key](https://console.anthropic.com/)).
 
-The demo shows three pre-computed structures (1TUP, 1CRN, 6LU7) with the Mol\* viewer, pLDDT / PAE confidence charts, and the Claude interpretation panel. Confidence values in the demo are synthetic; for real predictions on your own sequences, follow the Quickstart below.
+The demo shows three pre-computed structures (**1TUP** — p53 DNA-binding domain, **1CRN** — crambin, **6LU7** — SARS-CoV-2 main protease) with the Mol\* viewer, pLDDT / PAE confidence charts, and the Claude interpretation panel.
+
+> ℹ️ **Demo confidence values are synthetic** — they showcase the UI, not the predictions. For real numbers on your own sequences, follow the Quickstart below.
 
 ---
 
@@ -119,6 +123,8 @@ EasyFold is zero-hosting and we never see your data, but a prediction still reac
 | **[rest.uniprot.org](https://www.uniprot.org/)** / **[data.rcsb.org](https://www.rcsb.org/)** | The **accession or PDB ID** you typed (e.g. `P04637`, `1TUP`). **No sequence is sent** — the lookup is by ID. | Only when you use the UniProt / PDB lookup tabs. |
 | **[api.anthropic.com](https://www.anthropic.com/)** | The prediction's **summary stats** (mean pLDDT, % low-confidence, PAE percentiles, pTM/ipTM) + your free-text question + the model's reply. **No full sequence or raw PAE matrix is sent.** Your own [Anthropic API key](https://console.anthropic.com/) — held only in browser memory (never persisted, never relayed through our backend). | Only when you click **Interpret**. |
 
+> ⚠️ **About the Anthropic key**: your browser POSTs directly to `api.anthropic.com`. That means *any JavaScript that loads on the page* could read the key while it's in memory. Only enter your key on the **official deployment** (this repo's `main` branch) or on a fork whose `frontend/lib/llm/` and `frontend/components/interpretation/` you've audited. Don't paste a real key into a random untrusted deployment.
+
 If you're handling IP-sensitive sequences, the ColabFold step is the one to scrutinize. Self-hosting a ColabFold mmseqs2 server (the project publishes the Docker image) is the supported escape hatch.
 
 **One more thing — job result URLs are bearer secrets.** Anyone with the `/predict/{jobId}` URL can read the prediction. The `jobId` is Modal's `FunctionCall.object_id` (~131 bits of entropy, unguessable) but treat the URL itself like an API token: don't paste it in chat, screenshots, or email if the result is sensitive.
@@ -161,9 +167,18 @@ Bug reports, feature requests, and design suggestions all welcome via GitHub Iss
 
 ## License
 
-This work is licensed under [**CC-BY-NC-SA 4.0**](LICENSE) — inherited from AlphaFold 3's license.
+EasyFold's own code, documentation, and screenshots are licensed under [**CC-BY-NC-SA 4.0**](LICENSE) — inherited from AlphaFold 3's license. What that means in practice depends on which path you actually run:
 
-If you exclusively use the **Boltz-2** path (which is [MIT-licensed](https://github.com/jwohlwend/boltz/blob/main/LICENSE)) and don't run AlphaFold 3 weights through the deployment, your work isn't subject to the AF3 non-commercial clause. Commercial users should consult the Boltz-2 license and confirm with their legal team.
+| Your deployment | AF3 non-commercial clause applies? | Commercial use OK? | Boltz-2 MIT clause applies? |
+|---|---|---|---|
+| **AF3 path** (you call `easyfold-af3`) | **Yes** — inherited from AlphaFold 3 weights | **No** (academic use only) | Not used |
+| **Boltz-2 only** (you call `easyfold-boltz`, never `easyfold-af3`) | No (you never load AF3 weights) | **Yes**, subject to Boltz-2's [MIT license](https://github.com/jwohlwend/boltz/blob/main/LICENSE) | Yes |
+| **Mixed** (sometimes AF3, sometimes Boltz) | Any prediction-derived output from AF3 is non-commercial | The AF3-derived outputs can't be used commercially; Boltz-derived ones can | Yes, for the Boltz outputs |
+| **EasyFold's source code and docs** | — (this repo isn't a model derivative) | Non-commercial use only, per CC-BY-NC-SA. Forking and modifying are fine for non-commercial; redistributing requires share-alike. | — |
+
+For commercial deployments, the safe path is **Boltz-2 only**. Confirm with your legal team — this table is guidance, not legal advice.
+
+> A note on EasyFold's own code license: CC-BY-NC-SA was chosen to match AF3's license so users don't accidentally cross AF3's non-commercial line. The code itself is a wrapper and doesn't bundle AF3 weights or source. A future dual-license (e.g. CC-BY-NC-SA + Apache-2.0 for the wrapper code) is on the table if there's enough commercial interest in the Boltz-only path; open an issue if you need it.
 
 ---
 

@@ -80,6 +80,12 @@ export function PredictClient({ jobId }: PredictClientProps) {
         </span>
       </header>
 
+      <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-200">
+        🔗 Anyone with this page&apos;s URL can view this prediction. Treat the
+        link like a password — don&apos;t paste it in chat, screenshots, or
+        email if the result is sensitive.
+      </p>
+
       {view.kind === "polling" && (
         <StatusBanner status={view.status.status} model={model} />
       )}

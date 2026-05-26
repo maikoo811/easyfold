@@ -82,7 +82,11 @@ export function InterpretationPanel({
         Your API key is sent directly from your browser to{" "}
         <code className="font-mono">api.anthropic.com</code>. EasyFold&apos;s
         backend never sees it, and it isn&apos;t stored anywhere — refreshing the
-        page clears it.
+        page clears it.{" "}
+        <span className="text-amber-700 dark:text-amber-200">
+          Only enter a real key on a deployment you trust (the official repo or
+          a fork whose JavaScript you&apos;ve audited).
+        </span>
       </p>
 
       <div className="space-y-2">

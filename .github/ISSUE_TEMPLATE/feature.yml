@@ -1,0 +1,46 @@
+name: 💡 Feature request
+description: Suggest a feature, capability, or UI improvement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion!
+
+        For open-ended ideas or "is this in scope?" questions, [Discussions](https://github.com/maikoo811/easyfold/discussions) is often a better fit than Issues — it's easier to iterate before there's a concrete proposal.
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: What scientific problem does this solve?
+      description: What are you trying to accomplish that EasyFold can't do today? Frame in terms of the science, not the code.
+      placeholder: |
+        I want to scan all 20 substitutions at residue 175 in p53 to see which keep the DNA-binding domain confidently folded. Right now I'd have to submit 20 separate predictions and compare manually.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach (optional)
+      description: If you have a concrete UI / API change in mind, describe it. Otherwise leave blank — the maintainers will design.
+      placeholder: |
+        Add a "Mutation scan" tab to the assembly builder that takes a residue position + alphabet (default = 20 standard AAs), generates 20 jobs in one POST, and renders a comparison table.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What would you do without this feature?
+      description: Helps gauge urgency vs. nice-to-have.
+      placeholder: |
+        I'd write a script that POSTs the 20 jobs sequentially and parses the results — feasible but slow to iterate on.
+
+  - type: checkboxes
+    id: scope-check
+    attributes:
+      label: Scope sanity check
+      description: |
+        EasyFold is intentionally focused (see [`CLAUDE.md → Things that are out of scope for MVP`](https://github.com/maikoo811/easyfold/blob/main/CLAUDE.md#things-that-are-out-of-scope-for-mvp)). Confirm the request fits.
+      options:
+        - label: This is not user authentication, multi-tenancy, batch infrastructure, hosted SaaS, or mobile UI (those are explicitly out of scope).
+          required: true
