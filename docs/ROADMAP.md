@@ -115,15 +115,15 @@ The authoritative task list. Drives session progression — see `CLAUDE.md → A
   - Depends: 4.3
   - Acceptance: frontend `pnpm test` green with 54 tests; backend `uv run pytest` green with 185 tests; mypy/ruff still clean; OpenAPI snapshot test passes + regen script is idempotent; CI on PR #18 green on both jobs.
 
-- [~] **5.2 Public release** ← **NEXT** · Branch: `chore/public-release-v1.0.0`
-  - Status: In progress · Started: 2026-05-26
-  - Flip the GitHub repo from Private to Public (Settings → General → Danger Zone). Enable branch protection on `main` (require PR + CI; no force push; no deletion; require linear history). Enable Discussions. Cut a `v1.0.0` git tag with release notes summarising 1.x–4.5.
-  - Depends: 4.3 (formally; the agreed pre-Public sweet-spot path pulls 5.2 ahead of 4.1 / 4.2 / 4.4 / 5.1 — those become post-Public follow-ups, since the repo is fully usable as-is via the README's Boltz quickstart)
-  - Acceptance: repo Public; `main` branch protection active; v1.0.0 tagged; README + HF demo URL both load on first visit.
+- [x] **5.2 Public release (v1.0.0)** · Branch: `chore/public-release-v1.0.0` (+ 4 hardening PRs in parallel: #21, #23, #24, #25)
+  - Status: Done · Completed: 2026-05-30
+  - Repo flipped Private → Public; `main` branch protection active (frontend+backend CI required, no force push, no deletion, linear history, admin bypass for solo-maintainer escape); Discussions enabled; `v1.0.0` annotated tag (`75e4382` → commit `c9dfa66`) + [GitHub Release](https://github.com/maikoo811/easyfold/releases/tag/v1.0.0) published with the full release notes. Three rounds of pre-flip Clearline external review surfaced + landed real hardening (input caps, license clarity table, opt-in rate limit, ColabFold A3M validation, UI bearer-secret banner, etc.) in the same window.
+  - Depends: 4.3 (formally; the sweet-spot path pulled 5.2 ahead of 4.1 / 4.2 / 4.4 / 5.1 — those are now post-Public follow-ups).
+  - Acceptance: ✅ repo Public; ✅ `main` branch protection active; ✅ v1.0.0 tagged; ✅ Release published; ✅ README + HF demo URL load in incognito.
 
-### Post-Public follow-ups (no fixed order)
+### Post-Public follow-ups (no fixed order — pick based on what surfaces from the SNS announcement + early feedback)
 
-- [ ] **4.1 "Deploy to Modal" button and template** — converts the README Quickstart's step 3 from `./modal/deploy.sh boltz` to a single click. Wait for 5.2 first; cheap UX upgrade after Public.
+- [ ] **5.1 Open beta — share the repo, collect feedback** ← **NEXT (default)** — post the v1.0.0 SNS announcement + ask 20 structural biologists / drug discovery folks to try the public repo. Real-user feedback drives the order of the next 3.
+- [ ] **4.1 "Deploy to Modal" button and template** — converts the README Quickstart's step 3 from `./modal/deploy.sh boltz` to a single click. Cheap UX upgrade.
 - [ ] **4.2 Docker Compose self-hosting** — `docker compose up` for users who can't / won't use Modal. Lower priority than 4.1; BYOC Modal is the documented primary path.
-- [ ] **4.4 bioRxiv Application Note draft** — ≤4 pp manuscript referencing the public repo + demo + figures from the README screenshots.
-- [ ] **5.1 Closed beta (20 testers)** — "ask 20 structural biologists / drug discovery folks to try the public repo, collect feedback for 2 weeks." Post-Public is more efficient than pre-Public (no need to gate access).
+- [ ] **4.4 bioRxiv Application Note draft** — ≤4 pp manuscript referencing the public repo + demo + figures from the README screenshots. Needs real-usage signal first (citations / user count) to be credible.
