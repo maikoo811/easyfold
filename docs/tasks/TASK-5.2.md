@@ -1,13 +1,13 @@
 # TASK-5.2 — Public release (v1.0.0)
 
-**Status:** In progress
-**Branch:** `chore/public-release-v1.0.0`
+**Status:** Done
+**Branch:** `chore/public-release-v1.0.0` (scaffolding) + `chore/flip-task-5.2-done` (this PR)
 **Started:** 2026-05-26
-**Completed:** —
+**Completed:** 2026-05-30
 
 ## Context
 
-The repo is feature-complete for MVP (1.1 → 4.3 + 4.5 test hardening + post-4.5 input limits / body size middleware / security headers / bearer-URL disclosure). The HF demo is live, the README is polished, the security audit (internal + Clearline external) returned no critical findings, and the only thing left between us and Public is the flip itself.
+The repo is feature-complete for MVP (1.1 → 4.3 + 4.5 test hardening + post-4.5 input limits / body size middleware / security headers / bearer-URL disclosure / license clarity / opt-in rate limit). The HF demo is live, the README is polished, the security audit (internal + Clearline external × 3) returned no critical findings, and the only thing left between us and Public was the flip itself.
 
 This task is the flip: Private → Public, branch protection, Discussions, `v1.0.0` tag + GitHub Release.
 
@@ -35,11 +35,11 @@ EasyFold is publicly visible on github.com/maikoo811/easyfold with branch protec
 
 ## Acceptance criteria
 
-- [ ] `https://github.com/maikoo811/easyfold` loads in incognito (README + 3 stacked screenshots + Mermaid diagram all render).
-- [ ] `https://huggingface.co/spaces/maiko811/easyfold-demo` still loads in incognito (regression check).
-- [ ] Repo Settings shows: visibility = Public, Discussions = Enabled, `main` branch protection active with the rules above.
-- [ ] `git ls-remote --tags origin | grep v1.0.0` shows the tag pushed to origin.
-- [ ] `https://github.com/maikoo811/easyfold/releases/tag/v1.0.0` shows the release with the notes from `docs/release-notes/v1.0.0.md`.
+- [x] `https://github.com/maikoo811/easyfold` loads in incognito (README + 3 stacked screenshots + Mermaid diagram all render).
+- [x] `https://huggingface.co/spaces/maiko811/easyfold-demo` still loads in incognito (regression check).
+- [x] Repo Settings shows: visibility = Public, Discussions = Enabled, `main` branch protection active with the rules above.
+- [x] `git ls-remote --tags origin | grep v1.0.0` → `75e4382...refs/tags/v1.0.0` (pushed).
+- [x] `https://github.com/maikoo811/easyfold/releases/tag/v1.0.0` shows the release with the notes from `docs/release-notes/v1.0.0.md`.
 
 ## Approach
 
@@ -51,8 +51,25 @@ EasyFold is publicly visible on github.com/maikoo811/easyfold with branch protec
 
 ## Implementation notes
 
-<Filled during work.>
+- **3 PRs of pre-Public hardening landed between scaffolding and flip** — not strictly required by 5.2 but triggered by Clearline external reviews (×3) while waiting on the user's Public-flip UI action. Each one was small, focused, and tightened the v1.0.0 surface:
+  - PR #21: input size caps + body-size middleware + security headers + bearer-URL docs.
+  - PR #23: license clarity table + UI warnings (bearer-secret banner on `/predict/{jobId}`, Anthropic-key fork-audit warning on Interpret panel) + Issues templates.
+  - PR #24: generic-error mode (env-var opt-in) + optional `slowapi` rate limit + `PredictionJob.name` regex + ColabFold A3M validation + pLDDT scale constant.
+  - PR #25: rollback over-reach on CORS default (back to `localhost:3000` only, dropped 3001 fallback). Surfaced a generalizable lesson about narrow vs broad interpretation of ambiguous user directives — captured in CLAUDE.md learning log.
+- **Public-first, then-protect ordering** worked as planned. GitHub Free plan doesn't allow branch protection on Private repos; the brief window of unprotected `main` between flip and `gh api PUT` was seconds, with no public traffic possible.
+- **Branch protection applied via `gh api`** with the planned settings:
+  - `required_status_checks.contexts=["frontend", "backend"]` (CI green required)
+  - `required_status_checks.strict=true` (branches must be up to date)
+  - `required_linear_history=true` (matches our rebase-merge policy)
+  - `allow_force_pushes=false`, `allow_deletions=false`
+  - `enforce_admins=false` (solo-maintainer emergency escape hatch)
+  - `required_pull_request_reviews=null` (no review requirement — single dev)
+- **`v1.0.0` annotated tag** points at the post-CORS-rollback merge commit (`c9dfa66`), so the release reflects the fully hardened MVP. Tag pushed via `git push origin v1.0.0`, Release created via `gh release create v1.0.0 --notes-file docs/release-notes/v1.0.0.md --latest`.
+- **SNS announcement** was prepared in parallel with the flip but held until v1.0.0 was published so the GitHub link wouldn't 404 for early visitors.
 
 ## Learnings
 
-<Filled after completion.>
+- [generalizable] **GitHub Free plan branch protection is Public-only.** If you want secure-by-default-from-second-zero, you either pay for Pro or accept a 30-second window of unprotected `main` between visibility flip and the protection API call. For a fresh repo nobody knows about, the window is harmless — but worth knowing for repos with pre-flip notoriety.
+- [generalizable] **External review pressure during a Public flip is high-quality forcing-function input.** While waiting on the UI flip, three rounds of external review (Clearline) surfaced real medium-priority items (license clarity, input caps, UI warnings, rate-limit opt-in, A3M validation) that we'd have shipped sub-optimally without the pause. The right rhythm is: open the PR for the flip, then keep reviewing in parallel, and don't let "ready to flip" mean "stop reviewing."
+- [generalizable] **Narrow interpretation of ambiguous user directives first.** Captured separately as a CLAUDE.md learning log entry from the CORS rollback PR: "Localhostを消して" → broader interpretation (remove all localhost) was technically more secure but added a Quickstart env-var step the user hadn't asked for. The narrower read (drop the 3001 fallback only) was what they meant. When a short directive could mean multiple things, default to the smaller change and confirm before going broader.
+- Project-specific: `gh release create --notes-file` reads markdown files committed to the repo. Committing `docs/release-notes/vX.Y.Z.md` for each release gives you a persistent source of truth that survives even if GitHub Releases gets re-imported, plus the file is reviewable as a PR before the tag goes out.
