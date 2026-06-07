@@ -1,3 +1,5 @@
+**English** | [日本語](README.ja.md)
+
 # EasyFold
 
 > **Ask Claude what your AlphaFold 3 prediction means.**
