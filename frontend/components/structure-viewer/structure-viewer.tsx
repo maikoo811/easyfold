@@ -15,8 +15,18 @@ interface MolstarLayoutOptions {
   layoutShowSequence?: boolean;
   layoutShowLog?: boolean;
   layoutShowLeftPanel?: boolean;
+  // Viewport overlay icons (right edge of the canvas). Setting any of these to
+  // false hides the corresponding icon — and crucially also removes the user's
+  // ability to open the panel it triggers (Screenshot / Structure Tools / etc).
+  viewportShowAnimation?: boolean;
+  viewportShowControls?: boolean;
   viewportShowExpand?: boolean;
+  viewportShowReset?: boolean;
+  viewportShowScreenshotControls?: boolean;
   viewportShowSelectionMode?: boolean;
+  viewportShowSettings?: boolean;
+  viewportShowToggleFullscreen?: boolean;
+  viewportShowTrajectoryControls?: boolean;
 }
 
 interface MolstarGlobal {
@@ -30,7 +40,14 @@ interface MolstarGlobal {
 
 /** Pass these to `Viewer.create` to suppress Mol*'s side panels and chrome —
  * we want a clean contained viewer; the user gets confidence charts + the
- * LLM interpretation panel below it instead. */
+ * LLM interpretation panel below it instead.
+ *
+ * The `layoutShow*` group hides the side panels themselves; the
+ * `viewportShow*` group hides the floating icons on the right edge of the
+ * canvas (Screenshot, Settings, Structure Tools, Animation, etc.) — without
+ * these, the user could still click the icons to re-open the panels we hid.
+ * Bottom-of-canvas residue info (`PRO 47 / pLDDT 46.32`) stays — that's a
+ * useful hover readout, not chrome. */
 const VIEWER_OPTIONS: MolstarLayoutOptions = {
   layoutIsExpanded: false,
   layoutShowControls: false,
@@ -38,8 +55,15 @@ const VIEWER_OPTIONS: MolstarLayoutOptions = {
   layoutShowSequence: false,
   layoutShowLog: false,
   layoutShowLeftPanel: false,
+  viewportShowAnimation: false,
+  viewportShowControls: false,
   viewportShowExpand: false,
+  viewportShowReset: false,
+  viewportShowScreenshotControls: false,
   viewportShowSelectionMode: false,
+  viewportShowSettings: false,
+  viewportShowToggleFullscreen: false,
+  viewportShowTrajectoryControls: false,
 };
 
 declare global {
