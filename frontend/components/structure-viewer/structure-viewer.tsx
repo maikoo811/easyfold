@@ -3,9 +3,33 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle } from "lucide-react";
 
+interface MolstarStructureComponent {
+  components: unknown;
+}
+
+interface MolstarPlugin {
+  dataTransaction: (fn: () => Promise<void>) => Promise<void>;
+  managers?: {
+    structure?: {
+      hierarchy?: {
+        current?: { structures?: MolstarStructureComponent[] };
+      };
+      component?: {
+        updateRepresentationsTheme: (
+          components: unknown,
+          params: { color?: string },
+        ) => Promise<void>;
+      };
+    };
+  };
+}
+
 interface MolstarViewer {
   dispose: () => void;
   loadStructureFromUrl: (url: string, format: string) => Promise<void>;
+  /** Full Mol* PluginContext, exposed by the UMD bundle's Viewer wrapper. We
+   * use it for theme application — see {@link applyPlddtTheme}. */
+  plugin?: MolstarPlugin;
 }
 
 interface MolstarLayoutOptions {
@@ -117,6 +141,32 @@ function loadMolstar(): Promise<MolstarGlobal> {
   return scriptPromise;
 }
 
+/** Apply Mol*'s built-in `plddt-confidence` color theme to all loaded
+ * structures. Uses the standard AlphaFold blue → cyan → yellow → orange
+ * gradient based on the B-factor field (where AF3 / Boltz-2 store pLDDT).
+ *
+ * Fail-open: if the plugin's theme API isn't shaped as expected (rare —
+ * Mol* could move things in a future minor) we swallow the error and leave
+ * the structure with its default coloring. The viewer still renders fine.
+ */
+async function applyPlddtTheme(viewer: MolstarViewer): Promise<void> {
+  const plugin = viewer.plugin;
+  const structures = plugin?.managers?.structure?.hierarchy?.current?.structures;
+  const component = plugin?.managers?.structure?.component;
+  if (!plugin || !structures || !component) return;
+  try {
+    await plugin.dataTransaction(async () => {
+      for (const structure of structures) {
+        await component.updateRepresentationsTheme(structure.components, {
+          color: "plddt-confidence",
+        });
+      }
+    });
+  } catch {
+    // Theme application is best-effort; the viewer remains functional without it.
+  }
+}
+
 interface StructureViewerProps {
   /** URL of the structure file. Defaults to the bundled 1TUP fixture when neither `url` nor `cif` is provided. */
   url?: string;
@@ -126,6 +176,11 @@ interface StructureViewerProps {
   format?: "mmcif" | "pdb";
   /** Container height in CSS pixels. */
   height?: number;
+  /** When true, apply the `plddt-confidence` theme after loading — colors the
+   * structure by AlphaFold-style confidence (blue = very high, orange = very low).
+   * Requires the structure file to carry pLDDT values in the B-factor field
+   * (the convention used by AF3 and Boltz-2 outputs). */
+  colorByPlddt?: boolean;
 }
 
 export function StructureViewer({
@@ -133,6 +188,7 @@ export function StructureViewer({
   cif,
   format = "mmcif",
   height = 520,
+  colorByPlddt = false,
 }: StructureViewerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -167,6 +223,10 @@ export function StructureViewer({
           return;
         }
         await viewer.loadStructureFromUrl(targetUrl, format);
+        if (cancelled) return;
+        if (colorByPlddt) {
+          await applyPlddtTheme(viewer);
+        }
         if (!cancelled) setLoading(false);
       } catch (err) {
         if (!cancelled) {
@@ -181,7 +241,7 @@ export function StructureViewer({
       viewer?.dispose();
       if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-  }, [url, cif, format]);
+  }, [url, cif, format, colorByPlddt]);
 
   return (
     <div
