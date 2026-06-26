@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Check } from "lucide-react";
+import { AlertCircle, Check, ClipboardPaste, Dna, Search } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,9 +50,18 @@ export function SequenceInput({ onAdd }: SequenceInputProps) {
     <div className="space-y-4">
       <Tabs defaultValue="fasta">
         <TabsList className="w-full">
-          <TabsTrigger value="fasta">Paste sequence</TabsTrigger>
-          <TabsTrigger value="uniprot">UniProt</TabsTrigger>
-          <TabsTrigger value="rcsb">PDB</TabsTrigger>
+          <TabsTrigger value="fasta" className="gap-1.5">
+            <ClipboardPaste className="size-3.5" aria-hidden />
+            Paste sequence
+          </TabsTrigger>
+          <TabsTrigger value="uniprot" className="gap-1.5">
+            <Search className="size-3.5" aria-hidden />
+            UniProt
+          </TabsTrigger>
+          <TabsTrigger value="rcsb" className="gap-1.5">
+            <Dna className="size-3.5" aria-hidden />
+            PDB
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="fasta" className="pt-4">

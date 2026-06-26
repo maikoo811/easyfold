@@ -17,6 +17,11 @@ import { useAssemblyBuilder } from "./use-assembly-builder";
  *   2. AssemblyCard (entities, per-entity copies / modifications / ligands)
  *   3. PredictButton (Boltz / AF3 cards with cost + license trade-offs)
  *
+ * On viewports >= 1024px (Tailwind's `lg`), steps 1 and 2 sit side-by-side
+ * so the user can build the assembly while still seeing the input form. On
+ * narrower screens everything stacks vertically. Step 3 is always full
+ * width below.
+ *
  * State lives in {@link useAssemblyBuilder} — a pure useReducer that owns
  * the full draft and exposes typed action callbacks. The submit step
  * (`predict-button.tsx`) converts the draft to API JSON via
@@ -27,20 +32,22 @@ export function AssemblyBuilder() {
 
   return (
     <div className="space-y-8">
-      <section className="space-y-3">
-        <StepHeader number={1} title="Choose your protein" />
-        <SequenceInput onAdd={api.addProtein} />
-        <QuickStartChips onAdd={api.addProtein} />
-      </section>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section className="space-y-3">
+          <StepHeader number={1} title="Choose your protein" />
+          <SequenceInput onAdd={api.addProtein} />
+          <QuickStartChips onAdd={api.addProtein} />
+        </section>
 
-      <section className="space-y-3">
-        <StepHeader
-          number={2}
-          title="Build your assembly"
-          subtitle="Optionally set copies, add modifications or ligands"
-        />
-        <AssemblyCard state={api.state} api={api} />
-      </section>
+        <section className="space-y-3">
+          <StepHeader
+            number={2}
+            title="Build your assembly"
+            subtitle="Optionally set copies, add modifications or ligands"
+          />
+          <AssemblyCard state={api.state} api={api} />
+        </section>
+      </div>
 
       <section className="space-y-3">
         <StepHeader number={3} title="Predict" />

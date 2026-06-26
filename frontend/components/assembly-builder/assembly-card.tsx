@@ -50,9 +50,7 @@ export function AssemblyCard({ state, api }: AssemblyCardProps) {
       </div>
 
       {state.proteins.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No entities yet. Add a protein from the input above to start building your prediction.
-        </p>
+        <EmptyAssemblyState />
       ) : (
         <ul className="space-y-3">
           {state.proteins.map((protein, idx) => (
@@ -92,5 +90,50 @@ export function AssemblyCard({ state, api }: AssemblyCardProps) {
         </div>
       )}
     </section>
+  );
+}
+
+/** Small visual cue for the empty-state Assembly card. A schematic shows
+ * "what an assembly is" (one or more proteins, optionally with ligands /
+ * modifications) so first-time users have a mental model before they start
+ * filling things in. */
+function EmptyAssemblyState() {
+  return (
+    <div className="flex flex-col items-center gap-3 py-6 text-center">
+      <AssemblySchematic className="size-16 text-muted-foreground/60" />
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">No entities yet</p>
+        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+          An assembly is one or more proteins, optionally with copies,
+          modifications, or ligands. Add one from the input above — or use the{" "}
+          <span className="font-medium text-foreground">Try:</span> chips for a
+          one-click example.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AssemblySchematic({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {/* Protein backbone — a wavy line as a stand-in for a chain */}
+      <path d="M8 36 Q16 24, 24 36 T40 36 T56 36" />
+      {/* Ligand — a small circle attached below */}
+      <circle cx="32" cy="50" r="3.5" />
+      <path d="M32 40 L32 46" strokeDasharray="2 2" />
+      {/* Modification — a diamond pinned on the backbone */}
+      <path d="M44 20 L48 16 L52 20 L48 24 Z" />
+      <path d="M48 24 L48 32" strokeDasharray="2 2" />
+    </svg>
   );
 }
