@@ -4,20 +4,21 @@ import { SequenceInput } from "@/components/sequence-input";
 
 import { AssemblyCard } from "./assembly-card";
 import { PredictButton } from "./predict-button";
+import { QuickStartChips } from "./quick-start-chips";
 import { useAssemblyBuilder } from "./use-assembly-builder";
 
 /**
  * Top-level home-page component.
  *
- * Layout (top → bottom):
- *   1. Existing 3-tab SequenceInput (paste / UniProt / PDB) — adds proteins
- *      to the assembly via `onAdd`.
- *   2. Assembly card listing all entities with chain ID preview + per-entity
- *      controls (copies, modifications, delete) + "Add ligand".
- *   3. Predict buttons (Boltz / AF3) with model-capability tooltips.
+ * The page is laid out as three numbered steps so a first-time visitor can
+ * see the flow at a glance: pick a protein → build the assembly → predict.
  *
- * State lives in `useAssemblyBuilder` — a pure useReducer that owns the
- * full draft and exposes typed action callbacks. The submit step
+ *   1. SequenceInput (3 tabs: paste / UniProt / PDB) + QuickStartChips
+ *   2. AssemblyCard (entities, per-entity copies / modifications / ligands)
+ *   3. PredictButton (Boltz / AF3 cards with cost + license trade-offs)
+ *
+ * State lives in {@link useAssemblyBuilder} — a pure useReducer that owns
+ * the full draft and exposes typed action callbacks. The submit step
  * (`predict-button.tsx`) converts the draft to API JSON via
  * `lib/assembly.ts::toJobBody`.
  */
@@ -25,10 +26,49 @@ export function AssemblyBuilder() {
   const api = useAssemblyBuilder();
 
   return (
-    <div className="space-y-6">
-      <SequenceInput onAdd={api.addProtein} />
-      <AssemblyCard state={api.state} api={api} />
-      <PredictButton state={api.state} />
+    <div className="space-y-8">
+      <section className="space-y-3">
+        <StepHeader number={1} title="Choose your protein" />
+        <SequenceInput onAdd={api.addProtein} />
+        <QuickStartChips onAdd={api.addProtein} />
+      </section>
+
+      <section className="space-y-3">
+        <StepHeader
+          number={2}
+          title="Build your assembly"
+          subtitle="Optionally set copies, add modifications or ligands"
+        />
+        <AssemblyCard state={api.state} api={api} />
+      </section>
+
+      <section className="space-y-3">
+        <StepHeader number={3} title="Predict" />
+        <PredictButton state={api.state} />
+      </section>
+    </div>
+  );
+}
+
+interface StepHeaderProps {
+  number: number;
+  title: string;
+  subtitle?: string;
+}
+
+function StepHeader({ number, title, subtitle }: StepHeaderProps) {
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        aria-hidden
+        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
+      >
+        {number}
+      </span>
+      <div className="space-y-0.5">
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      </div>
     </div>
   );
 }
