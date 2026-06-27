@@ -1,3 +1,5 @@
+import { Info, LayoutGrid } from "lucide-react";
+
 import { ExampleCard } from "@/components/example-card";
 import { Logo } from "@/components/logo";
 
@@ -12,7 +14,7 @@ export const metadata = {
 export default function DemoLandingPage() {
   return (
     <div className="mx-auto max-w-[960px] space-y-10 px-6 py-16">
-      <header className="space-y-3">
+      <header className="space-y-3 border-l-2 border-primary/40 pl-4">
         <div className="flex items-center gap-3">
           <Logo className="size-7" />
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -26,7 +28,8 @@ export default function DemoLandingPage() {
       </header>
 
       <section className="space-y-3">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <LayoutGrid className="size-3.5" aria-hidden />
           Pick a structure
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -43,10 +46,13 @@ export default function DemoLandingPage() {
         </div>
       </section>
 
-      <p className="max-w-prose text-xs italic leading-relaxed text-muted-foreground">
-        Demo confidence values are synthetic so the page works without a GPU.
-        Your own deploy uses real AlphaFold 3 / Boltz-2 output.
-      </p>
+      <div className="flex items-start gap-2 rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+        <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+        <p className="max-w-prose">
+          Demo confidence values are synthetic so the page works without a GPU.
+          Your own deploy uses real AlphaFold 3 / Boltz-2 output.
+        </p>
+      </div>
     </div>
   );
 }
