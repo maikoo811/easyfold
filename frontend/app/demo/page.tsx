@@ -1,4 +1,4 @@
-import { Info, LayoutGrid } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
 
 import { ExampleCard } from "@/components/example-card";
 import { Logo } from "@/components/logo";
@@ -46,13 +46,10 @@ export default function DemoLandingPage() {
         </div>
       </section>
 
-      <div className="flex items-start gap-2 rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
-        <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        <p className="max-w-prose">
-          Demo confidence values are synthetic so the page works without a GPU.
-          Your own deploy uses real AlphaFold 3 / Boltz-2 output.
-        </p>
-      </div>
+      <p className="max-w-prose text-balance text-xs leading-relaxed text-muted-foreground">
+        Demo confidence values are synthetic so the page works without a GPU.
+        Your own deploy uses real AlphaFold 3 / Boltz-2 output.
+      </p>
     </div>
   );
 }
