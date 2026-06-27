@@ -7,7 +7,7 @@ import { Logo } from "@/components/logo";
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center bg-zinc-50/60 px-6 py-16 dark:bg-black">
-      <main className="w-full max-w-[1080px] space-y-12">
+      <main className="w-full max-w-[720px] space-y-12">
         <header className="space-y-4">
           <div className="flex items-center gap-3">
             <Logo className="size-7" />
