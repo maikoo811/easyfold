@@ -14,9 +14,26 @@ interface AssemblyCardProps {
   api: AssemblyBuilderApi;
 }
 
-/** Renders the running assembly: name input + protein cards + ligand cards + add-ligand affordance. */
+/** Renders the running assembly: name input + protein cards + ligand cards + add-ligand affordance.
+ *
+ * When the assembly is empty we deliberately hide both the bordered card
+ * frame and the Job-name input — neither carries meaning until there's
+ * something to name, and the previous full-card-with-SVG empty state was
+ * eating ~500 px of vertical real estate to communicate "nothing here yet".
+ * The compact empty hint is enough — Step 1 above already explains how to
+ * add a protein and the Try-chips give a one-click example. */
 export function AssemblyCard({ state, api }: AssemblyCardProps) {
   const displayName = state.jobName || defaultJobName(state.proteins);
+  const isEmpty = state.proteins.length === 0;
+
+  if (isEmpty) {
+    return (
+      <p className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+        Nothing here yet. Add a protein with Step 1 — your assembly will appear
+        here.
+      </p>
+    );
+  }
 
   // Compute starting chain index for each entity in render order. React 19's
   // strict-immutability rule forbids reassigning a counter inside a .map
@@ -49,91 +66,40 @@ export function AssemblyCard({ state, api }: AssemblyCardProps) {
         />
       </div>
 
-      {state.proteins.length === 0 ? (
-        <EmptyAssemblyState />
-      ) : (
-        <ul className="space-y-3">
-          {state.proteins.map((protein, idx) => (
-            <li key={protein.id}>
-              <ProteinCard
-                protein={protein}
-                startChainIndex={proteinChainStarts[idx]}
-                onCopiesChange={(copies) => api.setProteinCopies(protein.id, copies)}
-                onRemove={() => api.removeProtein(protein.id)}
-                onAddModification={() => api.addModification(protein.id)}
-                onUpdateModification={(modId, patch) =>
-                  api.updateModification(protein.id, modId, patch)
-                }
-                onRemoveModification={(modId) => api.removeModification(protein.id, modId)}
-              />
-            </li>
-          ))}
-          {state.ligands.map((ligand, idx) => (
-            <li key={ligand.id}>
-              <LigandCard
-                ligand={ligand}
-                startChainIndex={ligandChainStarts[idx]}
-                onCopiesChange={(copies) => api.setLigandCopies(ligand.id, copies)}
-                onModeChange={(mode) => api.setLigandMode(ligand.id, mode)}
-                onSmilesChange={(smiles) => api.setLigandSmiles(ligand.id, smiles)}
-                onCcdChange={(codes) => api.setLigandCcd(ligand.id, codes)}
-                onRemove={() => api.removeLigand(ligand.id)}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="space-y-3">
+        {state.proteins.map((protein, idx) => (
+          <li key={protein.id}>
+            <ProteinCard
+              protein={protein}
+              startChainIndex={proteinChainStarts[idx]}
+              onCopiesChange={(copies) => api.setProteinCopies(protein.id, copies)}
+              onRemove={() => api.removeProtein(protein.id)}
+              onAddModification={() => api.addModification(protein.id)}
+              onUpdateModification={(modId, patch) =>
+                api.updateModification(protein.id, modId, patch)
+              }
+              onRemoveModification={(modId) => api.removeModification(protein.id, modId)}
+            />
+          </li>
+        ))}
+        {state.ligands.map((ligand, idx) => (
+          <li key={ligand.id}>
+            <LigandCard
+              ligand={ligand}
+              startChainIndex={ligandChainStarts[idx]}
+              onCopiesChange={(copies) => api.setLigandCopies(ligand.id, copies)}
+              onModeChange={(mode) => api.setLigandMode(ligand.id, mode)}
+              onSmilesChange={(smiles) => api.setLigandSmiles(ligand.id, smiles)}
+              onCcdChange={(codes) => api.setLigandCcd(ligand.id, codes)}
+              onRemove={() => api.removeLigand(ligand.id)}
+            />
+          </li>
+        ))}
+      </ul>
 
-      {state.proteins.length > 0 && (
-        <div className="pt-1">
-          <AddLigandButton onAdd={(mode) => api.addLigandStarter(mode)} />
-        </div>
-      )}
-    </section>
-  );
-}
-
-/** Small visual cue for the empty-state Assembly card. A schematic shows
- * "what an assembly is" (one or more proteins, optionally with ligands /
- * modifications) so first-time users have a mental model before they start
- * filling things in. */
-function EmptyAssemblyState() {
-  return (
-    <div className="flex flex-col items-center gap-3 py-6 text-center">
-      <AssemblySchematic className="size-16 text-muted-foreground/60" />
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">No entities yet</p>
-        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-          An assembly is one or more proteins, optionally with copies,
-          modifications, or ligands. Add one from the input above — or use the{" "}
-          <span className="font-medium text-foreground">Try:</span> chips for a
-          one-click example.
-        </p>
+      <div className="pt-1">
+        <AddLigandButton onAdd={(mode) => api.addLigandStarter(mode)} />
       </div>
-    </div>
-  );
-}
-
-function AssemblySchematic({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 64 64"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      {/* Protein backbone — a wavy line as a stand-in for a chain */}
-      <path d="M8 36 Q16 24, 24 36 T40 36 T56 36" />
-      {/* Ligand — a small circle attached below */}
-      <circle cx="32" cy="50" r="3.5" />
-      <path d="M32 40 L32 46" strokeDasharray="2 2" />
-      {/* Modification — a diamond pinned on the backbone */}
-      <path d="M44 20 L48 16 L52 20 L48 24 Z" />
-      <path d="M48 24 L48 32" strokeDasharray="2 2" />
-    </svg>
+    </section>
   );
 }
