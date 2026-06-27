@@ -22,10 +22,9 @@ export const EXAMPLES: Example[] = [
   {
     id: "1tup",
     pdbId: "1TUP",
-    title: "p53 tumor suppressor bound to DNA",
-    tag: "Cancer",
-    blurb:
-      "The classic cancer-related transcription factor in complex with its DNA target. 219-residue core domain.",
+    title: "p53 tumor suppressor",
+    tag: "Cancer · 219 residues",
+    blurb: "Classic cancer-related transcription factor bound to DNA.",
     structureUrl: "/fixtures/1tup.cif",
     fixtureUrl: "/fixtures/1tup_confidence.json",
     structureDescription: "TP53 tetramer bound to DNA",
@@ -33,10 +32,9 @@ export const EXAMPLES: Example[] = [
   {
     id: "1crn",
     pdbId: "1CRN",
-    title: "Crambin — small disulfide-rich protein",
-    tag: "Teaching example",
-    blurb:
-      "Only 46 residues. A textbook example used in structural biology teaching and small-protein method development.",
+    title: "Crambin",
+    tag: "Teaching example · 46 residues",
+    blurb: "Small disulfide-rich protein, a textbook example.",
     structureUrl: "/fixtures/1crn.cif",
     fixtureUrl: "/fixtures/1crn_confidence.json",
     structureDescription: "Crambin from Crambe abyssinica",
@@ -44,10 +42,9 @@ export const EXAMPLES: Example[] = [
   {
     id: "6lu7",
     pdbId: "6LU7",
-    title: "SARS-CoV-2 main protease + N3 inhibitor",
-    tag: "COVID-19",
-    blurb:
-      "Major COVID-19 drug-discovery target, 306 residues, bound to peptidomimetic inhibitor N3.",
+    title: "SARS-CoV-2 main protease",
+    tag: "COVID-19 · 306 residues",
+    blurb: "Drug-discovery target bound to peptidomimetic inhibitor N3.",
     structureUrl: "/fixtures/6lu7.cif",
     fixtureUrl: "/fixtures/6lu7_confidence.json",
     structureDescription: "SARS-CoV-2 main protease (3CL pro) with N3 inhibitor",

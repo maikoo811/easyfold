@@ -20,9 +20,8 @@ export default function DemoLandingPage() {
           </h1>
         </div>
         <p className="max-w-prose text-base leading-relaxed text-foreground">
-          Try EasyFold without installing anything. Pick a structure below to
-          see the 3D model in your browser, view per-residue confidence colors,
-          and ask Claude to explain what you&apos;re looking at.
+          Try EasyFold without installing anything. Pick a structure to see the
+          3D model, confidence colors, and an AI explanation.
         </p>
       </header>
 
@@ -45,9 +44,8 @@ export default function DemoLandingPage() {
       </section>
 
       <p className="max-w-prose text-xs italic leading-relaxed text-muted-foreground">
-        The confidence values in the demo are synthetic placeholders so the
-        page works without a GPU. Running your own deploy uses the real
-        AlphaFold 3 / Boltz-2 output.
+        Demo confidence values are synthetic so the page works without a GPU.
+        Your own deploy uses real AlphaFold 3 / Boltz-2 output.
       </p>
     </div>
   );
