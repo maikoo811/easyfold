@@ -49,9 +49,12 @@ yarn-error.log*
 coverage/
 
 # Per-contributor agent / editor configs (AGENTS.md for OpenAI Codex,
-# .cursor/ for Cursor, .token-ops/ for Cursor's token-ops MCP cache).
-# These are personal workflow files that vary per contributor; the
-# project canonical agent contract lives in CLAUDE.md (which IS tracked).
+# .cursor/ for Cursor, .token-ops/ for Cursor's token-ops MCP cache,
+# .claude/ for Claude Code local settings + skill scripts). These are
+# personal workflow files that vary per contributor and may contain
+# local secrets (API keys, MCP tokens, absolute paths); the project
+# canonical agent contract lives in CLAUDE.md (which IS tracked).
 AGENTS.md
 .cursor/
 .token-ops/
+.claude/
