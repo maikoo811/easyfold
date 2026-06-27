@@ -117,6 +117,22 @@ function loadMolstar(): Promise<MolstarGlobal> {
       document.head.appendChild(link);
     }
 
+    // The `viewportShow*` props on Viewer.create cover the standard set of
+    // floating buttons (expand / reset / screenshot / selection mode / …),
+    // but a handful of other icons (snapshot / illumination / stereo) hang
+    // off separate plugin modules and ignore those flags. They show up as
+    // the small inert sun / glasses icons in the top-right of the canvas.
+    // Embedded usage doesn't want any of them, so we nuke the whole
+    // `.msp-viewport-controls` container as a backstop. The override stylesheet
+    // is injected once per page and stays cheap (one CSS rule).
+    if (!document.querySelector(`style[data-molstar-overrides]`)) {
+      const style = document.createElement("style");
+      style.dataset.molstarOverrides = "true";
+      style.textContent =
+        ".msp-plugin .msp-viewport-controls { display: none !important; }";
+      document.head.appendChild(style);
+    }
+
     const existing = document.querySelector<HTMLScriptElement>(`script[data-molstar]`);
     const handleLoad = () => {
       if (window.molstar) resolveLoad(window.molstar);

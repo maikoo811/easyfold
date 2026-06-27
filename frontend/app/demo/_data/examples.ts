@@ -5,6 +5,9 @@ export interface Example {
   pdbId: string;
   /** Short title shown on the landing card and per-example page. */
   title: string;
+  /** One-word context chip ("Cancer", "Teaching example", "COVID-19") rendered
+   * above the title so visitors can scan the row without parsing the blurb. */
+  tag: string;
   /** One-sentence summary for the card body. */
   blurb: string;
   /** Public URL of the mmCIF (served from `public/fixtures/`). */
@@ -20,6 +23,7 @@ export const EXAMPLES: Example[] = [
     id: "1tup",
     pdbId: "1TUP",
     title: "p53 tumor suppressor bound to DNA",
+    tag: "Cancer",
     blurb:
       "The classic cancer-related transcription factor in complex with its DNA target. 219-residue core domain.",
     structureUrl: "/fixtures/1tup.cif",
@@ -30,6 +34,7 @@ export const EXAMPLES: Example[] = [
     id: "1crn",
     pdbId: "1CRN",
     title: "Crambin — small disulfide-rich protein",
+    tag: "Teaching example",
     blurb:
       "Only 46 residues. A textbook example used in structural biology teaching and small-protein method development.",
     structureUrl: "/fixtures/1crn.cif",
@@ -40,6 +45,7 @@ export const EXAMPLES: Example[] = [
     id: "6lu7",
     pdbId: "6LU7",
     title: "SARS-CoV-2 main protease + N3 inhibitor",
+    tag: "COVID-19",
     blurb:
       "Major COVID-19 drug-discovery target, 306 residues, bound to peptidomimetic inhibitor N3.",
     structureUrl: "/fixtures/6lu7.cif",
