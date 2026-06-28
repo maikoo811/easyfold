@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 
 import { ConfidenceCharts } from "@/components/confidence-charts";
@@ -34,6 +34,16 @@ export function PredictionResult({ result }: PredictionResultProps) {
   const plddtStats = summarizePlddt(result.plddt);
   const interpretSectionRef = useRef<HTMLDivElement>(null);
 
+  // Shared state for the chart ↔ 3D hover link. The PlddtChart drives this on
+  // mouse-move; the StructureViewer reads it to apply a transient Mol*
+  // highlight on the matching residue. Lives at this level so a future PAE-
+  // click feature can write into the same state.
+  const [hoveredResidue, setHoveredResidue] = useState<number | null>(null);
+  const handleHoverResidue = useCallback(
+    (r: number | null) => setHoveredResidue(r),
+    [],
+  );
+
   const scrollToInterpret = () => {
     const node = interpretSectionRef.current;
     if (!node) return;
@@ -45,6 +55,11 @@ export function PredictionResult({ result }: PredictionResultProps) {
       textarea?.focus();
     });
   };
+
+  const hoveredPlddt =
+    hoveredResidue !== null && hoveredResidue >= 1 && hoveredResidue <= result.plddt.length
+      ? result.plddt[hoveredResidue - 1]
+      : null;
 
   return (
     <div className="space-y-6">
@@ -93,11 +108,36 @@ export function PredictionResult({ result }: PredictionResultProps) {
         )}
       </header>
 
-      <StructureViewer cif={result.cif} format="mmcif" colorByPlddt />
+      <div className="space-y-2">
+        {/* Reserve the badge row's height even when nothing is hovered, so the
+            viewer below doesn't jump up by ~32 px when the cursor enters the
+            chart. The placeholder uses visibility:hidden to keep layout stable. */}
+        <div
+          className={`flex items-center gap-2 text-xs font-mono ${
+            hoveredResidue === null ? "invisible" : "text-foreground"
+          }`}
+          aria-live="polite"
+        >
+          <span className="rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-primary">
+            Residue {hoveredResidue ?? "—"}
+            {hoveredPlddt !== null && ` · pLDDT ${hoveredPlddt.toFixed(1)}`}
+          </span>
+        </div>
+        <StructureViewer
+          cif={result.cif}
+          format="mmcif"
+          colorByPlddt
+          highlightedResidue={hoveredResidue}
+        />
+      </div>
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-foreground">Model confidence</h2>
-        <ConfidenceCharts data={confidence} />
+        <ConfidenceCharts
+          data={confidence}
+          hoveredResidue={hoveredResidue}
+          onHoverResidue={handleHoverResidue}
+        />
         {/* When pae is omitted we still pass an empty matrix; ConfidenceCharts
             renders the pLDDT chart unconditionally and the PAE heatmap degrades
             to an empty grid. Single-chain jobs are the common case for this. */}
