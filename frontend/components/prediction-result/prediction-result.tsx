@@ -222,9 +222,10 @@ function PlddtSummary({ stats }: { stats: PlddtStats }) {
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
-        {bands.map((b) => (
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
+        {bands.map((b, i) => (
           <span key={b.key} className="inline-flex items-center gap-1">
+            {i > 0 && <span className="text-border" aria-hidden>·</span>}
             <span
               aria-hidden
               className={`inline-block size-2 rounded-[1px] ${b.dotClass}`}
