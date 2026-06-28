@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ModelResult } from "@/lib/api";
 import type { ConfidenceData } from "@/lib/confidence";
-import { summarizePlddt } from "@/lib/plddt-stats";
+import { type PlddtStats, summarizePlddt } from "@/lib/plddt-stats";
 
 interface PredictionResultProps {
   result: ModelResult;
@@ -89,28 +89,7 @@ export function PredictionResult({ result }: PredictionResultProps) {
           </Button>
         </div>
 
-        {plddtStats && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Confidence:</span>
-            <span className="font-mono text-foreground">
-              mean pLDDT {plddtStats.mean.toFixed(1)}
-            </span>
-            <span
-              className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-medium text-sky-900 dark:text-sky-200"
-              title="Residues with pLDDT > 70 — confident or better"
-            >
-              ✓ {percent(plddtStats.highFraction)} high
-            </span>
-            {plddtStats.lowFraction > 0 && (
-              <span
-                className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-medium text-amber-900 dark:text-amber-200"
-                title="Residues with pLDDT < 50 — likely disordered or mispredicted"
-              >
-                ⚠ {percent(plddtStats.lowFraction)} low
-              </span>
-            )}
-          </div>
-        )}
+        {plddtStats && <PlddtSummary stats={plddtStats} />}
       </header>
 
       <div className="space-y-2">
@@ -161,6 +140,103 @@ export function PredictionResult({ result }: PredictionResultProps) {
 
 function percent(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
+}
+
+/** AF3 4-band pLDDT summary: median + stacked-bar visualisation + per-band
+ * percentages. Lives here (not as a standalone component file) because it's
+ * only used in the result header and the surface is small.
+ *
+ * Why median + bands (not mean + "✓ high / ⚠ low"):
+ *   - The mean hides bimodal distributions; a structure with a fully-folded
+ *     core (90+) and totally-disordered tails (30-) reports the same mean as
+ *     a uniformly mediocre structure (60).
+ *   - The previous "high (>70)" / "low (<50)" labels merged AF3's "very high"
+ *     and "confident" bands into one bucket called "high", which a researcher
+ *     used to the AF3 website would read as ≥90 only.
+ *
+ * Color hex codes match Mol*'s plddt-confidence theme (which we apply to the
+ * 3D structure) so the legend on the badge ↔ the colors in the viewer agree.
+ */
+function PlddtSummary({ stats }: { stats: PlddtStats }) {
+  const bands = [
+    {
+      key: "very-high",
+      label: "≥90",
+      legend: "very high",
+      fraction: stats.veryHighFraction,
+      barClass: "bg-[#0053D6]",
+      dotClass: "bg-[#0053D6]",
+    },
+    {
+      key: "confident",
+      label: "70-89",
+      legend: "confident",
+      fraction: stats.confidentFraction,
+      barClass: "bg-[#65CBF3]",
+      dotClass: "bg-[#65CBF3]",
+    },
+    {
+      key: "low",
+      label: "50-69",
+      legend: "low",
+      fraction: stats.lowFraction,
+      barClass: "bg-[#FFDB13]",
+      dotClass: "bg-[#FFDB13]",
+    },
+    {
+      key: "very-low",
+      label: "<50",
+      legend: "very low",
+      fraction: stats.veryLowFraction,
+      barClass: "bg-[#FF7D45]",
+      dotClass: "bg-[#FF7D45]",
+    },
+  ] as const;
+
+  const ariaLabel = `Per-residue pLDDT distribution: ${bands
+    .map((b) => `${percent(b.fraction)} ${b.legend} (${b.label})`)
+    .join(", ")}`;
+
+  return (
+    <div className="space-y-1.5 text-xs">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-muted-foreground">Confidence:</span>
+        <span className="font-mono text-foreground">
+          median pLDDT {Math.round(stats.median)}
+        </span>
+        <span className="text-muted-foreground">
+          (mean {stats.mean.toFixed(1)})
+        </span>
+      </div>
+      <div
+        className="flex h-2 w-full max-w-sm overflow-hidden rounded-sm border border-border/40"
+        role="img"
+        aria-label={ariaLabel}
+      >
+        {bands.map((b) => (
+          <div
+            key={b.key}
+            className={b.barClass}
+            style={{ width: `${b.fraction * 100}%` }}
+            title={`${b.legend} (pLDDT ${b.label}): ${percent(b.fraction)}`}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
+        {bands.map((b) => (
+          <span key={b.key} className="inline-flex items-center gap-1">
+            <span
+              aria-hidden
+              className={`inline-block size-2 rounded-[1px] ${b.dotClass}`}
+            />
+            <span>
+              {percent(b.fraction)} {b.label}
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function toConfidenceData(result: ModelResult): ConfidenceData {
