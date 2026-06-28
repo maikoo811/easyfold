@@ -71,7 +71,12 @@ export function PredictionResult({ result }: PredictionResultProps) {
           {result.ptm !== null && (
             <Badge variant="outline">pTM {result.ptm.toFixed(2)}</Badge>
           )}
-          {result.iptm !== null && (
+          {/* ipTM is the *interface* predicted TM-score — only meaningful for
+              multi-chain complexes. Boltz returns 0.0 (not null) for
+              single-chain jobs where no interface exists, so a literal
+              "ipTM 0.00" badge reads as "the prediction failed" to anyone
+              who actually knows what ipTM means. Hide it in that case. */}
+          {result.iptm !== null && result.iptm > 0 && (
             <Badge variant="outline">ipTM {result.iptm.toFixed(2)}</Badge>
           )}
           <Button
