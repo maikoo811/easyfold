@@ -5,6 +5,16 @@ import { AlertCircle } from "lucide-react";
 
 interface MolstarStructureComponent {
   components: unknown;
+  cell?: { obj?: { data?: MolstarStructure } };
+}
+
+interface MolstarLociHighlights {
+  highlightOnly: (params: { loci: unknown }) => void;
+  clearHighlights: () => void;
+}
+
+interface MolstarInteractivityManager {
+  lociHighlights: MolstarLociHighlights;
 }
 
 interface MolstarPlugin {
@@ -21,6 +31,7 @@ interface MolstarPlugin {
         ) => Promise<void>;
       };
     };
+    interactivity?: MolstarInteractivityManager;
   };
 }
 
@@ -183,6 +194,79 @@ async function applyPlddtTheme(viewer: MolstarViewer): Promise<void> {
   }
 }
 
+// Minimal duck-typed shape of the Mol* `Structure` / `Unit` / `Model` graph we
+// reach into for the residue-highlight feature. Mol* doesn't expose these types
+// via the UMD bundle, so we declare what we actually read; if Mol* changes the
+// shape in a future release the highlight call just no-ops via the try/catch
+// in `highlightResidue` (the chart-side dashed line still works).
+interface MolstarUnit {
+  elements: ArrayLike<number>;
+  residueIndex: ArrayLike<number>;
+  model: {
+    atomicHierarchy: {
+      residues: { auth_seq_id: { value: (i: number) => number } };
+    };
+  };
+}
+
+interface MolstarStructure {
+  units: ArrayLike<MolstarUnit>;
+}
+
+/** Build and apply a transient highlight on the residue whose `auth_seq_id`
+ * matches `residue`. Pass `null` to clear.
+ *
+ * We can't import Mol*'s `StructureElement.Loci` / `SortedArray` constructors
+ * from the UMD bundle (only `Viewer.create` is exported). So we synthesise the
+ * `element-loci` JS object Mol* expects by walking the structure's units
+ * manually and stuffing matching atom indices into the `elements[].indices`
+ * field. The interactivity manager accepts this duck-typed shape because the
+ * lociHighlights provider only iterates the indices for rendering — it doesn't
+ * type-check the array's class.
+ *
+ * Best-effort: every Mol* access is wrapped so a structural drift in a future
+ * Mol* release silently degrades to "no 3D highlight" rather than throwing.
+ * The dashed line on the chart still provides a "you are here" cue. */
+function highlightResidue(viewer: MolstarViewer, residue: number | null): void {
+  const lociHighlights = viewer.plugin?.managers?.interactivity?.lociHighlights;
+  if (!lociHighlights) return;
+  try {
+    if (residue === null) {
+      lociHighlights.clearHighlights();
+      return;
+    }
+
+    const structures = viewer.plugin?.managers?.structure?.hierarchy?.current?.structures;
+    const structure = structures?.[0]?.cell?.obj?.data;
+    if (!structure) return;
+
+    const elements: Array<{ unit: MolstarUnit; indices: number[] }> = [];
+    for (let u = 0; u < structure.units.length; u++) {
+      const unit = structure.units[u];
+      const matched: number[] = [];
+      for (let i = 0; i < unit.elements.length; i++) {
+        const atomIdx = unit.elements[i];
+        const resIdx = unit.residueIndex[atomIdx];
+        const authSeqId = unit.model.atomicHierarchy.residues.auth_seq_id.value(resIdx);
+        if (authSeqId === residue) matched.push(i);
+      }
+      if (matched.length > 0) elements.push({ unit, indices: matched });
+    }
+
+    if (elements.length === 0) {
+      lociHighlights.clearHighlights();
+      return;
+    }
+
+    lociHighlights.highlightOnly({
+      loci: { kind: "element-loci", structure, elements },
+    });
+  } catch {
+    // Mol* internals drifted or our shape was rejected — fall back to the
+    // chart-side dashed line as the only "you are here" signal.
+  }
+}
+
 interface StructureViewerProps {
   /** URL of the structure file. Defaults to the bundled 1TUP fixture when neither `url` nor `cif` is provided. */
   url?: string;
@@ -197,6 +281,9 @@ interface StructureViewerProps {
    * Requires the structure file to carry pLDDT values in the B-factor field
    * (the convention used by AF3 and Boltz-2 outputs). */
   colorByPlddt?: boolean;
+  /** 1-based residue number to transiently highlight. Pass null to clear. The
+   * chart parent drives this on hover to link the two views. */
+  highlightedResidue?: number | null;
 }
 
 export function StructureViewer({
@@ -205,8 +292,10 @@ export function StructureViewer({
   format = "mmcif",
   height = 520,
   colorByPlddt = false,
+  highlightedResidue = null,
 }: StructureViewerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<MolstarViewer | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -243,7 +332,10 @@ export function StructureViewer({
         if (colorByPlddt) {
           await applyPlddtTheme(viewer);
         }
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          viewerRef.current = viewer;
+          setLoading(false);
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load structure");
@@ -254,10 +346,20 @@ export function StructureViewer({
 
     return () => {
       cancelled = true;
+      viewerRef.current = null;
       viewer?.dispose();
       if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
   }, [url, cif, format, colorByPlddt]);
+
+  // Drive Mol*'s transient highlight from the chart's hover state. Keeping
+  // this in its own effect (rather than re-running the main mount effect)
+  // means hover updates don't tear down and rebuild the viewer.
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || loading) return;
+    highlightResidue(viewer, highlightedResidue);
+  }, [highlightedResidue, loading]);
 
   return (
     <div
