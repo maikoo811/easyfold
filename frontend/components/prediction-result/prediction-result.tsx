@@ -92,27 +92,29 @@ export function PredictionResult({ result }: PredictionResultProps) {
         {plddtStats && <PlddtSummary stats={plddtStats} />}
       </header>
 
-      <div className="space-y-2">
-        {/* Reserve the badge row's height even when nothing is hovered, so the
-            viewer below doesn't jump up by ~32 px when the cursor enters the
-            chart. The placeholder uses visibility:hidden to keep layout stable. */}
-        <div
-          className={`flex items-center gap-2 text-xs font-mono ${
-            hoveredResidue === null ? "invisible" : "text-foreground"
-          }`}
-          aria-live="polite"
-        >
-          <span className="rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-primary">
-            Residue {hoveredResidue ?? "—"}
-            {hoveredPlddt !== null && ` · pLDDT ${hoveredPlddt.toFixed(1)}`}
-          </span>
-        </div>
+      {/* Badge overlays the viewer canvas (top-left) when the chart is being
+          hovered — keeps the badge visually attached to the thing it's
+          describing, and means we don't have to reserve a 32 px empty row
+          above the viewer to avoid layout shift. `pointer-events-none` lets
+          mouse interaction pass through to the underlying Mol* canvas. */}
+      <div className="relative">
         <StructureViewer
           cif={result.cif}
           format="mmcif"
           colorByPlddt
           highlightedResidue={hoveredResidue}
         />
+        {hoveredResidue !== null && (
+          <div
+            aria-live="polite"
+            className="pointer-events-none absolute left-3 top-3 z-10"
+          >
+            <span className="rounded-md border border-primary/40 bg-background/90 px-2 py-1 font-mono text-xs text-primary shadow-sm backdrop-blur">
+              Residue {hoveredResidue}
+              {hoveredPlddt !== null && ` · pLDDT ${hoveredPlddt.toFixed(1)}`}
+            </span>
+          </div>
+        )}
       </div>
 
       <section className="space-y-3">
